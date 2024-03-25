@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 
-const WebView = ({ showInfo1, showInfo2, showInfo3, showInfo4, showInfo5, showInfo6, showInfo7, showInfo8, toggleInfo1, toggleInfo2, toggleInfo3, toggleInfo4, toggleInfo5, toggleInfo6, toggleInfo7, toggleInfo8 }) => {
+const WebView = ({ showInfo1, showInfo2, showInfo3, showInfo4, showInfo5, showInfo6, showInfo7, showInfo8, showInfo9, toggleInfo1, toggleInfo2, toggleInfo3, toggleInfo4, toggleInfo5, toggleInfo6, toggleInfo7, toggleInfo8, toggleInfo9 }) => {
   return (
     <ScrollView style={styles.webView}>
       <TouchableOpacity style={styles.webViewButton} onPress={toggleInfo1}>
@@ -91,6 +91,16 @@ const WebView = ({ showInfo1, showInfo2, showInfo3, showInfo4, showInfo5, showIn
       {showInfo8 && (
         <Text style={styles.webViewDropdown}>
           Pada tahap ini SPG/SPB diminta untuk mempersiapkan terlebih dahulu data artikel yang akan di input, seperti kode artikel atau nama artikel, jumlah artikel, kondisi artikel, catatan terkait artikel jika ada, foto artikel, foto lampiran, dan foto packing. Setelah itu SPG/SPB diminta untuk berkomunikasi dengan Team Leader, jika semua sudah sesuai SPG/SPB dapat melakukan proses penginputan pada menu <Text style={{fontWeight: 'bold'}}>retur</Text>. Setelah selesai menginput SPG/SPB dapat melihat status update retur yang sudah di buat.
+        </Text>
+      )}
+
+      <TouchableOpacity style={styles.webViewButton} onPress={toggleInfo9}>
+        <Text style={styles.webViewText}>BAP</Text>
+        <MaterialCommunityIcons name={showInfo9 ? "arrow-up-thick" : "arrow-down-thick"} style={styles.webViewIcon}/>
+      </TouchableOpacity>
+      {showInfo9 && (
+        <Text style={styles.webViewDropdown}>
+          ...
         </Text>
       )}
     </ScrollView>
