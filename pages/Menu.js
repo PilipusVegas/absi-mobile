@@ -127,7 +127,7 @@ const AbsiHome = ({route}) => {
         </TouchableOpacity>
         <TouchableOpacity style={styles.menu} onPress={() => navigation.navigate('Bap')}>
           <View style={styles.menuButton}>
-            <MaterialCommunityIcons style={styles.menuIcon} name="..."/>
+            <MaterialCommunityIcons style={styles.menuIcon} name="frequently-asked-questions"/>
           </View>
           <Text style={styles.menuLabel}>BAP</Text>
         </TouchableOpacity>
