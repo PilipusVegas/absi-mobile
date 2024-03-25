@@ -110,7 +110,7 @@ const WebView = ({ showInfo1, showInfo2, showInfo3, showInfo4, showInfo5, showIn
 const styles = StyleSheet.create({
   webView: {
     width: 350,
-    height: 300,
+    height: 200,
     marginTop: 20,
     marginLeft: 10,
     marginRight: 10,
