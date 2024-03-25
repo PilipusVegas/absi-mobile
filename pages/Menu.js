@@ -135,7 +135,7 @@ const AbsiHome = ({route}) => {
         <View style={styles.formLabel}>
           <Text style={styles.label}>Tutorial</Text>
         </View>
-        <WebViewComponent showInfo1={showInfo1} showInfo2={showInfo2} showInfo3={showInfo3} showInfo4={showInfo4} showInfo5={showInfo5} showInfo6={showInfo6} showInfo7={showInfo7} showInfo8={showInfo8} toggleInfo1={toggleInfo1} toggleInfo2={toggleInfo2} toggleInfo3={toggleInfo3} toggleInfo4={toggleInfo4} toggleInfo5={toggleInfo5} toggleInfo6={toggleInfo6} toggleInfo7={toggleInfo7} toggleInfo8={toggleInfo8}/>
+        <WebViewComponent showInfo1={showInfo1} showInfo2={showInfo2} showInfo3={showInfo3} showInfo4={showInfo4} showInfo5={showInfo5} showInfo6={showInfo6} showInfo7={showInfo7} showInfo8={showInfo8} showInfo9={showInfo9} toggleInfo1={toggleInfo1} toggleInfo2={toggleInfo2} toggleInfo3={toggleInfo3} toggleInfo4={toggleInfo4} toggleInfo5={toggleInfo5} toggleInfo6={toggleInfo6} toggleInfo7={toggleInfo7} toggleInfo8={toggleInfo8} toggleInfo9={toggleInfo9}/>
       </View>
     </View>
   );
