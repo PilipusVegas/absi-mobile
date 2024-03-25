@@ -16,15 +16,17 @@ const AbsiHome = ({route}) => {
   const [showInfo6, setShowInfo6] = useState(false);
   const [showInfo7, setShowInfo7] = useState(false);
   const [showInfo8, setShowInfo8] = useState(false);
+  const [showInfo9, setShowInfo9] = useState(false);
   const [selectedStore, setSelectedStore] = useState(null);
-  const toggleInfo1 = () => {setShowInfo1(!showInfo1); setShowInfo2(false); setShowInfo3(false); setShowInfo4(false); setShowInfo5(false); setShowInfo6(false); setShowInfo7(false); setShowInfo8(false)};
-  const toggleInfo2 = () => {setShowInfo1(false); setShowInfo2(!showInfo2); setShowInfo3(false); setShowInfo4(false); setShowInfo5(false); setShowInfo6(false); setShowInfo7(false); setShowInfo8(false)};
-  const toggleInfo3 = () => {setShowInfo1(false); setShowInfo2(false); setShowInfo3(!showInfo3); setShowInfo4(false); setShowInfo5(false); setShowInfo6(false); setShowInfo7(false); setShowInfo8(false)};
-  const toggleInfo4 = () => {setShowInfo1(false); setShowInfo2(false); setShowInfo3(false); setShowInfo4(!showInfo4); setShowInfo5(false); setShowInfo6(false); setShowInfo7(false); setShowInfo8(false)};
-  const toggleInfo5 = () => {setShowInfo1(false); setShowInfo2(false); setShowInfo3(false); setShowInfo4(false); setShowInfo5(!showInfo5); setShowInfo6(false); setShowInfo7(false); setShowInfo8(false)};
-  const toggleInfo6 = () => {setShowInfo1(false); setShowInfo2(false); setShowInfo3(false); setShowInfo4(false); setShowInfo5(false); setShowInfo6(!showInfo6); setShowInfo7(false); setShowInfo8(false)};
-  const toggleInfo7 = () => {setShowInfo1(false); setShowInfo2(false); setShowInfo3(false); setShowInfo4(false); setShowInfo5(false); setShowInfo6(false); setShowInfo7(!showInfo7); setShowInfo8(false)};
-  const toggleInfo8 = () => {setShowInfo1(false); setShowInfo2(false); setShowInfo3(false); setShowInfo4(false); setShowInfo5(false); setShowInfo6(false); setShowInfo7(false); setShowInfo8(!showInfo8)};
+  const toggleInfo1 = () => {setShowInfo1(!showInfo1); setShowInfo2(false); setShowInfo3(false); setShowInfo4(false); setShowInfo5(false); setShowInfo6(false); setShowInfo7(false); setShowInfo8(false); setShowInfo9(false)};
+  const toggleInfo2 = () => {setShowInfo1(false); setShowInfo2(!showInfo2); setShowInfo3(false); setShowInfo4(false); setShowInfo5(false); setShowInfo6(false); setShowInfo7(false); setShowInfo8(false); setShowInfo9(false)};
+  const toggleInfo3 = () => {setShowInfo1(false); setShowInfo2(false); setShowInfo3(!showInfo3); setShowInfo4(false); setShowInfo5(false); setShowInfo6(false); setShowInfo7(false); setShowInfo8(false); setShowInfo9(false)};
+  const toggleInfo4 = () => {setShowInfo1(false); setShowInfo2(false); setShowInfo3(false); setShowInfo4(!showInfo4); setShowInfo5(false); setShowInfo6(false); setShowInfo7(false); setShowInfo8(false); setShowInfo9(false)};
+  const toggleInfo5 = () => {setShowInfo1(false); setShowInfo2(false); setShowInfo3(false); setShowInfo4(false); setShowInfo5(!showInfo5); setShowInfo6(false); setShowInfo7(false); setShowInfo8(false); setShowInfo9(false)};
+  const toggleInfo6 = () => {setShowInfo1(false); setShowInfo2(false); setShowInfo3(false); setShowInfo4(false); setShowInfo5(false); setShowInfo6(!showInfo6); setShowInfo7(false); setShowInfo8(false); setShowInfo9(false)};
+  const toggleInfo7 = () => {setShowInfo1(false); setShowInfo2(false); setShowInfo3(false); setShowInfo4(false); setShowInfo5(false); setShowInfo6(false); setShowInfo7(!showInfo7); setShowInfo8(false); setShowInfo9(false)};
+  const toggleInfo8 = () => {setShowInfo1(false); setShowInfo2(false); setShowInfo3(false); setShowInfo4(false); setShowInfo5(false); setShowInfo6(false); setShowInfo7(false); setShowInfo8(!showInfo8); setShowInfo9(false)};
+  const toggleInfo9 = () => {setShowInfo1(false); setShowInfo2(false); setShowInfo3(false); setShowInfo4(false); setShowInfo5(false); setShowInfo6(false); setShowInfo7(false); setShowInfo8(false); setShowInfo9(!showInfo9)};
 
   const getDataFromStorage = async () => {
     try {
