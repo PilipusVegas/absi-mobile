@@ -29,6 +29,10 @@ import AbsiBuatRetur from './ReturArtikel/BuatRetur';
 import AbsiDetailRetur from './ReturArtikel/DetailRetur';
 import AbsiKeranjangRetur from './ReturArtikel/KeranjangRetur';
 import AbsiBap from './Bap/Bap.js';
+import AbsiDetailBap from './Bap/DetailBap';
+import AbsiBuatBap from './Bap/BuatBap';
+import AbsiKeranjangBap from './Bap/KeranjangBap'
+import AbsiArtikelBap from './Bap/ArtikelBap'
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -99,6 +103,10 @@ const Menu = ({route}) => {
       <Stack.Screen name="DetailRetur" component={AbsiDetailRetur} options={{title: 'Detail Retur'}}/>
       <Stack.Screen name="BuatRetur" component={AbsiBuatRetur} options={{title: 'Buat Retur'}}/>
       <Stack.Screen name="Bap" component={AbsiBap} options={{title: 'BAP'}}/>
+      <Stack.Screen name="DetailBap" component={AbsiDetailBap} option={{title: 'Detal BAP'}}/>
+      <Stack.Screen name="BuatBap" component={AbsiBuatBap} option={{title: 'Buat BAP'}}/>
+      <Stack.Screen name="KeranjangBap" component={AbsiKeranjangBap} option={{title: 'Keranjang BAP'}}/>
+      <Stack.Screen name="ArtikelBap" component={AbsiArtikelBap} option={{title: 'Artikel BAP'}}/>
     </Stack.Navigator>
   );
 }
