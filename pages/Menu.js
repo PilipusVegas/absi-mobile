@@ -188,21 +188,20 @@ const styles = StyleSheet.create({
   },
   menu: {
     width: '25%',
-    marginTop: 10,
     aspectRatio: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   menuButton: {
-    width: '75%',
+    width: '60%',
     aspectRatio: 1,
-    borderRadius: 20,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#0B666A',
   },
   menuIcon: {
-    fontSize: 40,
+    fontSize: 30,
     color: 'white',
   },
   menuLabel: {
