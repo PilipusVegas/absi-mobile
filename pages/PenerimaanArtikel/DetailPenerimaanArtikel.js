@@ -1,101 +1,87 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 
 const AbsiDetailPenerimaanArtikel = ({ route }) => {
-  const [setSelectedCount] = useState(0);
-  const { km, tanggal } = route.params;
-  const [totalItems, setTotalItems] = useState(0);
-  const [selectedItems, setSelectedItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
+  const { id_kirim, created_at, catatan_spg } = route.params;
   const [quantityMismatch, setQuantityMismatch] = useState(false);
-  const [dataBarang] = useState([
-    { id: '1', kodeBarang: 'FG-HXKL-205MX-C', namaBarang: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)', jumlahKirim: '10', jumlahTerima: '10', tanggalTerima: '05/01/2024' },
-    { id: '2', kodeBarang: 'FG-HXKL-205MX-C', namaBarang: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)', jumlahKirim: '20', jumlahTerima: '10', tanggalTerima: '05/01/2024' },
-    { id: '3', kodeBarang: 'FG-HXKL-205MX-C', namaBarang: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)', jumlahKirim: '10', jumlahTerima: '10', tanggalTerima: '05/01/2024' },
-    { id: '4', kodeBarang: 'FG-HXKL-205MX-C', namaBarang: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)', jumlahKirim: '20', jumlahTerima: '10', tanggalTerima: '05/01/2024' },
-    { id: '5', kodeBarang: 'FG-HXKL-205MX-C', namaBarang: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)', jumlahKirim: '10', jumlahTerima: '10', tanggalTerima: '05/01/2024' },
-  ]);
-  const handleItemPress = (barang) => {
-    const itemIndex = selectedItems.findIndex((item) => item.id === barang.id);
-    if (itemIndex !== -1) {
-      const newSelectedItems = [...selectedItems];
-      newSelectedItems.splice(itemIndex, 1);
-      setSelectedItems(newSelectedItems);
-      setSelectedCount(selectedItems.length - 1);
-    } else {
-      setSelectedItems([...selectedItems, barang]);
-      setSelectedCount(selectedItems.length + 1);
-    }
-  };
+
+  let totalSent = 0; 
+  filteredItems.forEach((barang) => {totalSent += parseInt(barang.qty)});
+
+  let totalReceived = 0; 
+  filteredItems.forEach((barang) => {totalReceived += parseInt(barang.qty_diterima)});
+
   useEffect(() => {
-    setFilteredItems(dataBarang);
-  }, [dataBarang]);
-  useEffect(() => {
-    let total = 0;
-    filteredItems.forEach((barang) => {
-      total += parseInt(barang.jumlahTerima);
-    });
-    setTotalItems(total);
-  }, [filteredItems]);
-  useEffect(() => {
-    let total = 0;
     let mismatchDetected = false;
     filteredItems.forEach((barang) => {
-      total += parseInt(barang.jumlahTerima);
-      if (parseInt(barang.jumlahKirim) !== parseInt(barang.jumlahTerima)) {
+      if (parseInt(barang.qty) !== parseInt(barang.qty_diterima)) {
         mismatchDetected = true;
       }
     });
-    setTotalItems(total);
     setQuantityMismatch(mismatchDetected);
   }, [filteredItems]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const formData = new FormData();
+        formData.append('id_kirim', id_kirim);
+        console.log('ID Kirim:', id_kirim);
+        const apiUrl = 'https://globalindo-group.com/absi_demo/api/getTerimaDetail';
+        const response = await fetch(apiUrl, { method: 'POST', body: formData });
+        if (!response.ok) {
+          throw new Error('Failed to fetch data');
+        }
+        const data = await response.json();
+        console.log('API Response:', data);
+        if (data.success) {setFilteredItems(data.detail_po)}
+      } catch (error) {
+        //
+      }
+    };
+    fetchData();
+  }, []);
 
   return (
     <View style={styles.container}>
       <View style={styles.form}>
         <View style={styles.header}>
           <View style={styles.headerRow}>
-            <Text style={styles.headerTextleft}>{km}</Text>
-            <Text style={styles.headerText}>{tanggal}</Text>
+            <Text style={styles.headerText}>{id_kirim}</Text>
+            <Text style={styles.headerText}>{created_at.split(' ')[0].split('-').reverse().join('-')}</Text>
           </View>
-          <Text style={styles.headerText}>{`Tanggal Di Terima: ${dataBarang[0].tanggalTerima}`}</Text>
-          <Text style={styles.headerText}>{`Catatan: Ada 5 buah kerdus`}</Text>
+          <Text style={styles.headerText}>Catatan: {catatan_spg ? catatan_spg : '-'}</Text>
         </View>
         <View style={styles.label}>
-          <Text style={styles.labelText1}>No.</Text>
-          <Text style={styles.labelText2}>List Artikel</Text>
-          <Text style={styles.labelText3}>Jumlah</Text>
+          <Text style={styles.labelText1}>NO.</Text>
+          <Text style={styles.labelText2}>ARTIKEL</Text>
         </View>
         <ScrollView style={styles.scroll}>
           {filteredItems.map((barang, index) => (
-            <View
-              key={index}
-              onPress={() => handleItemPress(barang)}
-              style={[
-                styles.card,
-                barang.jumlahKirim !== barang.jumlahTerima ? styles.cardError : null,
-              ]}
-            >
+            <TouchableOpacity key={index} style={[styles.card, parseInt(barang.qty) !== parseInt(barang.qty_diterima) ? styles.cardError : null]}>
               <View style={styles.cardRow}>
-                <Text style={styles.cardText1}>{`${barang.id}.`}</Text>
+                <Text style={styles.cardText1}>{`${index + 1}.`}</Text>
                 <View style={styles.cardColumn}>
-                  <Text style={styles.cardText2}>{`${barang.kodeBarang}`}</Text>
-                  <Text style={styles.cardText3}>{`${barang.namaBarang}`}</Text>
-                  <Text style={styles.cardText4}>{`Jumlah Di Kirim: ${barang.jumlahKirim}`}</Text>
+                  <Text style={styles.cardText2}>{`${barang.kode}`}</Text>
+                  <Text style={styles.cardText2}>{`${barang.nama_produk}`}</Text>
+                  <Text style={styles.cardText2}>{`Jumlah Kirim: ${barang.qty}`}</Text>
+                  <Text style={styles.cardText2}>{`Jumlah Terima: ${barang.qty_diterima}`}</Text>
                 </View>
-                <Text style={styles.cardText5}>{`${barang.jumlahTerima}`}</Text>
               </View>
-            </View>
+            </TouchableOpacity>
           ))}
         </ScrollView>
-        {quantityMismatch && (
-          <Text style={styles.textError}>
-            * Jumlah artikel yang diterima tidak sesuai dengan jumlah artikel yang dikirim, segera laporkan ini ke Team Leader atau buat BAP.
-          </Text>
-        )}
-        <View style={styles.labela}>
-          <Text style={styles.labelText}>Total Barang:</Text>
-          <Text style={styles.labelText}>{totalItems}</Text>
+        {quantityMismatch && (<Text style={styles.textInfo}>Selisih (Jumlah artikel yang diterima tidak sesuai dengan jumlah artikel yang dikirim, segera laporkan ini ke Team Leader atau buat BAP).</Text>)}
+        <View style={styles.bottom}>
+          <View style={styles.bottomRow}>
+            <Text style={styles.bottomText}>Total Kirim:</Text>
+            <Text style={styles.bottomText}>{totalSent} Artikel</Text>
+          </View>
+          <View style={styles.bottomRow}>
+            <Text style={styles.bottomText}>Total Terima:</Text>
+            <Text style={styles.bottomText}>{totalReceived} Artikel</Text>
+          </View>
         </View>
       </View>
     </View>
@@ -115,7 +101,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
   header: {
-    padding: 15,
+    padding: 10,
     marginTop: -10,
     borderRadius: 10,
     marginBottom: 10,
@@ -128,34 +114,26 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'white',
   },
-  headerTextleft: {
-    fontSize: 16,
-    color: 'white',
-    fontWeight: 'bold',
-  },
   headerText: {
     fontSize: 16,
     color: 'white',
+    fontWeight: 'bold',
   },
   label: {
     alignItems: 'center',
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    borderBottomWidth: 1,
+    borderBottomWidth: 2,
     borderBottomColor: 'black',
+    justifyContent: 'space-between',
   },
   labelText1: {
     fontSize: 16,
+    marginLeft: 10,
     fontWeight: 'bold',
   },
   labelText2: {
     fontSize: 16,
-    marginLeft: -185,
-    fontWeight: 'bold',
-  },
-  labelText3: {
-    fontSize: 16,
-    marginRight: 15,
+    marginRight: 150,
     fontWeight: 'bold',
   },
   scroll: {
@@ -163,62 +141,53 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '95%',
-    marginBottom: 5,
-    borderBottomWidth: 1,
-    borderBottomColor: '#071952',
+    marginTop: 10,
+    borderWidth: 2,
+    borderRadius: 10,
+    borderColor: 'green',
   },
   cardError: {
-    borderWidth: 1,
-    borderRadius: 10,
+    width: '95%',
+    marginTop: 10,
+    borderWidth: 2,
+    borderRadius: 5,
     borderColor: 'red',
-    borderBottomWidth: 1,
-    borderBottomColor: 'red',
   },
   cardRow: {
     alignItems: 'center',
     flexDirection: 'row',
   },
+  cardText1: {
+    fontSize: 16,
+    marginLeft: 15,
+  },
   cardColumn: {
     flex: 1,
   },
-  cardText1: {
-    fontSize: 16,
-    marginLeft: 5,
-    fontWeight: 'bold',
-  },
   cardText2: {
     fontSize: 16,
-    marginLeft: 15,
-    fontWeight: 'bold',
+    marginLeft: 50,
   },
-  cardText3: {
-    fontSize: 16,
-    marginLeft: 15,
-  },
-  cardText4: {
-    fontSize: 16,
-    marginLeft: 15,
-  },
-  cardText5: {
-    fontSize: 16,
-    marginRight: 10,
-    fontWeight: 'bold',
-  },
-  textError: {
+  textInfo: {
+    padding: 10,
     color: 'red',
-    fontSize: 14,
-    marginLeft: 10,
-    marginBottom: 5,
-  },
-  labela: {
-    padding: 15,
+    fontSize: 16,
+    borderWidth: 2,
     borderRadius: 10,
     marginBottom: 10,
-    flexDirection: 'row',
+    borderColor: 'red',
+  },
+  bottom: {
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 10,
     backgroundColor: '#071952',
+  },
+  bottomRow: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  labelText: {
+  bottomText: {
     fontSize: 16,
     color: 'white',
     fontWeight: 'bold',
