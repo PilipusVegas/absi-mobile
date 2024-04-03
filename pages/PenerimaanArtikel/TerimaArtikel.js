@@ -19,13 +19,9 @@ const AbsiTerimaArtikel = ({ navigation, route }) => {
 
   const handleCardClick = (data) => {
     if (['0', '1'].includes(data.status)) {
-      navigation.navigate('DetailTerimaArtikel', { id_kirim: data.id });
+      navigation.navigate('DetailTerimaArtikel', {id_kirim: data.id, created_at: data.created_at, catatan_spg: data.catatan_spg});
     } else if (['2', '3'].includes(data.status)) {
-      navigation.navigate('DetailPenerimaanArtikel', {
-        id_kirim: data.id,
-        created_at: data.created_at,
-        catatan_spg: data.catatan_spg,
-      });
+      navigation.navigate('DetailPenerimaanArtikel', {id_kirim: data.id, created_at: data.created_at, catatan_spg: data.catatan_spg});
     }
   };
 
@@ -48,7 +44,7 @@ const AbsiTerimaArtikel = ({ navigation, route }) => {
         setDataSelesai(dataSelesaiFiltered);
       }
     } catch (error) {
-      //
+      console.error('Error fetching data:', error);
     }
   };
 
@@ -98,9 +94,9 @@ const AbsiTerimaArtikel = ({ navigation, route }) => {
                       <View style={styles.cardRow}>
                         <View style={styles.cardLeft}>
                           <Text style={styles.cardText1}>{`${data.id}`}</Text>
-                          <Text style={styles.cardText2}>{`Status: ${status[data.status]}`}</Text>
+                          <Text style={styles.cardText2}>{`No. PO: ${data.id_permintaan}`}</Text>
                           <Text style={styles.cardText2}>{`Tanggal: ${data.created_at.split(' ')[0].split('-').reverse().join('-')}`}</Text>
-                          <Text style={styles.cardText3}>{`Nomor Permintaan (PO): ${data.id_permintaan}`}</Text>
+                          <Text style={styles.cardText3}>{`Status: ${status[data.status]}`}</Text>
                         </View>
                         <Text style={styles.cardRight}>TERIMA</Text>
                       </View>
@@ -113,9 +109,9 @@ const AbsiTerimaArtikel = ({ navigation, route }) => {
                       <View style={styles.cardRow}>
                         <View style={styles.cardLeft}>
                           <Text style={styles.cardText1}>{`${data.id}`}</Text>
-                          <Text style={styles.cardText2}>{`Status: ${status[data.status]}`}</Text>
+                          <Text style={styles.cardText2}>{`No. PO: ${data.id_permintaan}`}</Text>
                           <Text style={styles.cardText2}>{`Tanggal: ${data.created_at.split(' ')[0].split('-').reverse().join('-')}`}</Text>
-                          <Text style={styles.cardText3}>{`Nomor Permintaan (PO): ${data.id_permintaan}`}</Text>
+                          <Text style={styles.cardText3}>{`Status: ${status[data.status]}`}</Text>
                         </View>
                         <Text style={styles.cardRight}>DETAIL</Text>
                       </View>
