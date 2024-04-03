@@ -6,42 +6,35 @@ const AbsiDetailPenerimaanArtikel = ({ route }) => {
   const { id_kirim, created_at, catatan_spg } = route.params;
   const [quantityMismatch, setQuantityMismatch] = useState(false);
 
-  let totalSent = 0; 
-  filteredItems.forEach((barang) => {totalSent += parseInt(barang.qty)});
-
-  let totalReceived = 0; 
-  filteredItems.forEach((barang) => {totalReceived += parseInt(barang.qty_diterima)});
-
-  useEffect(() => {
-    let mismatchDetected = false;
-    filteredItems.forEach((barang) => {
-      if (parseInt(barang.qty) !== parseInt(barang.qty_diterima)) {
-        mismatchDetected = true;
-      }
-    });
-    setQuantityMismatch(mismatchDetected);
-  }, [filteredItems]);
-
   useEffect(() => {
     const fetchData = async () => {
       try {
         const formData = new FormData();
         formData.append('id_kirim', id_kirim);
-        console.log('ID Kirim:', id_kirim);
         const apiUrl = 'https://globalindo-group.com/absi_demo/api/getTerimaDetail';
         const response = await fetch(apiUrl, { method: 'POST', body: formData });
         if (!response.ok) {
-          throw new Error('Failed to fetch data');
+          throw new Error('Failed to fetch data. Status: ' + response.status);
         }
         const data = await response.json();
-        console.log('API Response:', data);
-        if (data.success) {setFilteredItems(data.detail_po)}
+        if (data.success) {
+          setFilteredItems(data.detail_po);
+          const mismatchDetected = data.detail_po.some(barang => parseInt(barang.qty) !== parseInt(barang.qty_diterima));
+          setQuantityMismatch(mismatchDetected);
+        }
       } catch (error) {
-        //
+        console.error('Error fetching data:', error);
       }
     };
     fetchData();
   }, []);
+
+  let totalSent = 0;
+  let totalReceived = 0;
+  filteredItems.forEach((barang) => {
+    totalSent += parseInt(barang.qty);
+    totalReceived += parseInt(barang.qty_diterima);
+  });
 
   return (
     <View style={styles.container}>
@@ -65,14 +58,18 @@ const AbsiDetailPenerimaanArtikel = ({ route }) => {
                 <View style={styles.cardColumn}>
                   <Text style={styles.cardText2}>{`${barang.kode}`}</Text>
                   <Text style={styles.cardText2}>{`${barang.nama_produk}`}</Text>
-                  <Text style={styles.cardText2}>{`Jumlah Kirim: ${barang.qty}`}</Text>
-                  <Text style={styles.cardText2}>{`Jumlah Terima: ${barang.qty_diterima}`}</Text>
+                  <Text style={styles.cardText2}>{`Jumlah Kirim: ${barang.qty} Artikel`}</Text>
+                  <Text style={styles.cardText2}>{`Jumlah Terima: ${barang.qty_diterima} Artikel`}</Text>
                 </View>
               </View>
             </TouchableOpacity>
           ))}
         </ScrollView>
-        {quantityMismatch && (<Text style={styles.textInfo}>Selisih (Jumlah artikel yang diterima tidak sesuai dengan jumlah artikel yang dikirim, segera laporkan ini ke Team Leader atau buat BAP).</Text>)}
+        {quantityMismatch && (
+          <Text style={styles.textInfo}>
+            Selisih (Jumlah artikel yang diterima tidak sesuai dengan jumlah artikel yang dikirim. Laporkan ini ke Team Leader atau buat BAP).
+          </Text>
+        )}
         <View style={styles.bottom}>
           <View style={styles.bottomRow}>
             <Text style={styles.bottomText}>Total Kirim:</Text>
@@ -150,7 +147,7 @@ const styles = StyleSheet.create({
     width: '95%',
     marginTop: 10,
     borderWidth: 2,
-    borderRadius: 5,
+    borderRadius: 10,
     borderColor: 'red',
   },
   cardRow: {
