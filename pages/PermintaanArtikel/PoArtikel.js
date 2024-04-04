@@ -2,6 +2,7 @@ import {useState, useEffect} from 'react';
 import {MaterialCommunityIcons} from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity} from 'react-native';
+import { apiUrl } from '../../globals.js';
 
 const statusDescriptions = {
   0: 'Menunggu di approve Leader',
@@ -71,11 +72,8 @@ const AbsiPOArtikel = ({route, navigation}) => {
     try {
       const formData = new FormData();
       formData.append('id_toko', id_toko);
-      const apiUrl = 'https://globalindo-group.com/absi_demo/api/getPo';
-      const response = await fetch(apiUrl, {method: 'POST', body: formData});
+      const response = await fetch(apiUrl + '/getPo', {method: 'POST', body: formData});
       const data = await response.json();
-      console.log(`success: ${data.success}, message: ${data.message}`);
-      console.log(data.permintaan);
       if (data.success) {
         const idPoArray = data.permintaan.map(item => item.id);
         await AsyncStorage.setItem('id_po', JSON.stringify(idPoArray));
@@ -106,13 +104,13 @@ const AbsiPOArtikel = ({route, navigation}) => {
         <TextInput value={searchText} style={styles.search} selectionColor="black" autoCapitalize="none" placeholder="Cari ID Artikel ..." onChangeText={(text) => setSearchText(text)}/>
         <View style={styles.buttonRow}>
           <TouchableOpacity onPress={() => handleButtonClick('Proses')} style={[styles.buttonOff, activeButton === 'Proses' && styles.buttonOn]}>
-            <Text style={[styles.buttonOfftext, activeButton === 'Proses' && styles.buttonOntext]}>DI PROSES</Text>
+            <Text style={[styles.buttonOfftext, activeButton === 'Proses' && styles.buttonOntext]}>DIPROSES</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => handleButtonClick('Selesai')} style={[styles.buttonOff, activeButton === 'Selesai' && styles.buttonOn]}>
             <Text style={[styles.buttonOfftext, activeButton === 'Selesai' && styles.buttonOntext]}>SELESAI</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => handleButtonClick('Tolak')} style={[styles.buttonOff, activeButton === 'Tolak' && styles.buttonOn]}>
-            <Text style={[styles.buttonOfftext, activeButton === 'Tolak' && styles.buttonOntext]}>DI TOLAK</Text>
+            <Text style={[styles.buttonOfftext, activeButton === 'Tolak' && styles.buttonOntext]}>DITOLAK</Text>
           </TouchableOpacity>
         </View>
         {renderFilteredData()}

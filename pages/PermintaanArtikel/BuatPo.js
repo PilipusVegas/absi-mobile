@@ -8,17 +8,16 @@ const AbsiBuatPO = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCount, setSelectedCount] = useState(0);
   const [selectedItems, setSelectedItems] = useState([]);
-  const [filteredItems, setFilteredItems] = useState([]);
 
   const handleSearch = useCallback((text) => {
     setSearchQuery(text);
     const filtered = dataArtikel.filter((item) => item.kode.toLowerCase().indexOf(text.toLowerCase()) !== -1);
-    setFilteredItems(filtered);
+    setDataArtikel(filtered);
   }, [dataArtikel]);
 
   const handleNavigate = useCallback(() => {
     if (selectedCount === 0) {
-      return;
+      return; 
     } else {
       navigation.navigate('KeranjangPo', { selectedItems });
     }
@@ -46,10 +45,6 @@ const AbsiBuatPO = ({ navigation }) => {
       const data = await response.json();
       if (Array.isArray(data)) {
         setDataArtikel(data);
-        setFilteredItems(data);
-        await AsyncStorage.setItem('produk_data', JSON.stringify(data.map(item => ({ kode: item.kode, nama_produk: item.nama_produk, qty:item.qty }))));
-        await AsyncStorage.setItem('store_data', JSON.stringify(data));  
-        console.log(data);
       }
     } catch (error) {
       //
@@ -66,7 +61,7 @@ const AbsiBuatPO = ({ navigation }) => {
         <TextInput value={searchQuery} style={styles.search} selectionColor="black" onChangeText={handleSearch} autoCapitalize="characters" placeholder="Cari Kode Artikel ..." />
         <Text style={styles.label}>LIST ARTIKEL</Text>
         <ScrollView style={styles.scroll}>
-          {filteredItems.map((barang, index) => (
+          {dataArtikel.map((barang, index) => (
             <TouchableOpacity key={index} style={styles.card} onPress={() => handleItemPress(barang)}>
               <View style={styles.cardRow}>
                 <View style={styles.cardColumn}>
