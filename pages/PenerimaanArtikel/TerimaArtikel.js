@@ -1,84 +1,125 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 
-const AbsiTerimaArtikel = ({ navigation }) => {
-  const dataProses = [
-    { km: 'KM-202301001', pm: 'PM-202301001', tanggal: '01/01/2024' },
-    { km: 'KM-202301002', pm: 'PM-202301001', tanggal: '01/01/2024' },
-    { km: 'KM-202301003', pm: 'PM-202301001', tanggal: '01/01/2024' },
-    { km: 'KM-202301004', pm: 'PM-202301001', tanggal: '01/01/2024' },
-    { km: 'KM-202301005', pm: 'PM-202301001', tanggal: '01/01/2024' },
-  ];
-  const dataSelesai = [
-    { km: 'KM-202301006', pm: 'PM-202301001', tanggal: '01/01/2024' },
-    { km: 'KM-202301007', pm: 'PM-202301001', tanggal: '01/01/2024' },
-    { km: 'KM-202301008', pm: 'PM-202301001', tanggal: '01/01/2024' },
-    { km: 'KM-202301009', pm: 'PM-202301001', tanggal: '01/01/2024' },
-  ];
-  const [searchText] = useState('');
-  const [dataToShow, setDataToShow] = useState([]);
-  const [activeButton, setActiveButton] = useState(null);
-  const filteredData = dataToShow.filter(
-    (data) =>
-      data.km.toLowerCase().includes(searchText.toLowerCase()) ||
-      data.pm.toLowerCase().includes(searchText.toLowerCase()) ||
-      data.tanggal.toLowerCase().includes(searchText.toLowerCase()
-    )
-  );
-  const handleButtonClick = (buttonName) => {
-    setActiveButton(buttonName);
-    if (buttonName === 'Proses') {
-      setDataToShow(dataProses);
-    } else if (buttonName === 'Selesai') {
-      setDataToShow(dataSelesai);
-    }
-  };
+const status = {
+  0: 'Menunggu di approve',
+  1: 'Proses kirim',
+  2: 'Selesai',
+  3: 'Selisih',
+};
+
+const AbsiTerimaArtikel = ({ navigation, route }) => {
+  const [idToko, setIdToko] = useState(null);
+  const [dataProses, setDataProses] = useState([]);
+  const [searchText, setSearchText] = useState('');
+  const [dataSelesai, setDataSelesai] = useState([]);
+  const [activeButton, setActiveButton] = useState('Proses');
+  const handleButtonClick = (buttonName) => setActiveButton(buttonName);
+
   const handleCardClick = (data) => {
-    let detailScreen = 'DetailTerimaArtikel';
-    if (activeButton === 'Selesai') {
-      detailScreen = 'DetailPenerimaanArtikel';
+    if (['0', '1'].includes(data.status)) {
+      navigation.navigate('DetailTerimaArtikel', {id_kirim: data.id, created_at: data.created_at, catatan_spg: data.catatan_spg});
+    } else if (['2', '3'].includes(data.status)) {
+      navigation.navigate('DetailPenerimaanArtikel', {id_kirim: data.id, created_at: data.created_at, catatan_spg: data.catatan_spg});
     }
-    navigation.navigate(detailScreen, { 
-      km: data.km,
-      pm: data.pm,
-      tanggal: data.tanggal,
-    });
   };
+
+  const fetchData = async (id_toko) => {
+    try {
+      const formData = new FormData();
+      formData.append('id_toko', id_toko);
+      const apiUrl = 'https://globalindo-group.com/absi_demo/api/getTerimaPo';
+      const response = await fetch(apiUrl, { method: 'POST', body: formData });
+      const responseData = await response.json();
+      if (responseData.success) {
+        const data = responseData.pengiriman;
+        const dataProsesFiltered = data.filter((item) =>
+          ['0', '1'].includes(item.status)
+        );
+        const dataSelesaiFiltered = data.filter((item) =>
+          ['2', '3'].includes(item.status)
+        );
+        setDataProses(dataProsesFiltered);
+        setDataSelesai(dataSelesaiFiltered);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+
   useEffect(() => {
-    handleButtonClick('Proses');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  
+    const fetchDataBasedOnParams = async () => {
+      try {
+        if (route.params && route.params.selectedStore) {
+          const { selectedStore } = route.params;
+          setIdToko(selectedStore.id_toko);
+          await fetchData(selectedStore.id_toko);
+        } else {
+          const storedIdToko = await AsyncStorage.getItem('id_toko');
+          if (storedIdToko) {
+            setIdToko(storedIdToko);
+            await fetchData(storedIdToko);
+          }
+        }
+      } catch (error) {
+        //
+      }
+    };
+    fetchDataBasedOnParams();
+  }, [route.params]);
+
   return (
     <View style={styles.container}>
       <View style={styles.form}>
-        <View style={styles.buttonRow}>
-          <TouchableOpacity onPress={() => handleButtonClick('Proses')} style={[styles.buttonOff, activeButton === 'Proses' && styles.buttonOn ]}>
-            <Text style={[styles.buttonOfftext, activeButton === 'Proses' && styles.buttonOntext]}>DI PROSES</Text>
+        <TextInput value={searchText} style={styles.search} autoCapitalize="none" selectionColor="black" placeholder="Cari ID Pengiriman ..." onChangeText={(text) => setSearchText(text)}/>
+        <View style={styles.button}>
+          <TouchableOpacity onPress={() => handleButtonClick('Proses')} style={[styles.buttonOff, activeButton === 'Proses' && styles.buttonOn]}>
+            <Text style={[styles.buttonOffText, activeButton === 'Proses' && styles.buttonOnText]}>PROSES</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => handleButtonClick('Selesai')} style={[styles.buttonOff, activeButton === 'Selesai' && styles.buttonOn]}>
-            <Text style={[styles.buttonOfftext, activeButton === 'Selesai' && styles.buttonOntext]}>SELESAI</Text>
+            <Text style={[styles.buttonOffText, activeButton === 'Selesai' && styles.buttonOnText]}>SELESAI</Text>
           </TouchableOpacity>
         </View>
         <ScrollView style={styles.scroll}>
-          {filteredData.map((data, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.card}
-              onPress={() => handleCardClick(data)}
-            >
-              <View style={styles.cardRow}>
-                <View style={styles.cardColumn}>
-                  <Text style={styles.cardText1}>{`${data.km}`}</Text>
-                  <Text style={styles.cardText2}>{`Tanggal: ${data.tanggal}`}</Text>
-                  <Text style={styles.cardText3}>{`No. PO: ${data.pm}`}</Text>
-                </View>
-                <Text style={styles.cardButton}>
-                  {activeButton === 'Proses' ? 'TERIMA' : activeButton === 'Selesai' ? 'DETAIL' : ''}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ))}
+          {(activeButton === 'Proses' && dataProses.length === 0) || (activeButton === 'Selesai' && dataSelesai.length === 0) ? (
+            <Text style={styles.cardEmpty}>TIDAK ADA DATA</Text>
+          ) : (
+            <>
+              {activeButton === 'Proses'
+                ? dataProses
+                  .filter((data) => data.id.includes(searchText))
+                  .map((data, index) => (
+                    <TouchableOpacity key={index} style={styles.card} onPress={() => handleCardClick(data)}>
+                      <View style={styles.cardRow}>
+                        <View style={styles.cardLeft}>
+                          <Text style={styles.cardText1}>{`${data.id}`}</Text>
+                          <Text style={styles.cardText2}>{`No. PO: ${data.id_permintaan}`}</Text>
+                          <Text style={styles.cardText2}>{`Tanggal: ${data.created_at.split(' ')[0].split('-').reverse().join('-')}`}</Text>
+                          <Text style={styles.cardText3}>{`Status: ${status[data.status]}`}</Text>
+                        </View>
+                        <Text style={styles.cardRight}>TERIMA</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))
+                : dataSelesai
+                  .filter((data) => data.id.includes(searchText))
+                  .map((data, index) => (
+                    <TouchableOpacity key={index} onPress={() => handleCardClick(data)} style={[styles.card, {borderColor: data.status === '2' ? 'green' : 'red'}]}>
+                      <View style={styles.cardRow}>
+                        <View style={styles.cardLeft}>
+                          <Text style={styles.cardText1}>{`${data.id}`}</Text>
+                          <Text style={styles.cardText2}>{`No. PO: ${data.id_permintaan}`}</Text>
+                          <Text style={styles.cardText2}>{`Tanggal: ${data.created_at.split(' ')[0].split('-').reverse().join('-')}`}</Text>
+                          <Text style={styles.cardText3}>{`Status: ${status[data.status]}`}</Text>
+                        </View>
+                        <Text style={styles.cardRight}>DETAIL</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))
+              }
+            </>
+          )}
         </ScrollView>
       </View>
     </View>
@@ -93,12 +134,20 @@ const styles = StyleSheet.create({
   form: {
     flex: 1,
     padding: 20,
-    marginTop: -10,
     borderRadius: 25,
     marginBottom: -20,
     backgroundColor: 'white',
   },
-  buttonRow: {
+  search: {
+    padding: 10,
+    marginTop: -10,
+    borderWidth: 2,
+    borderRadius: 10,
+    marginBottom: 10,
+    borderColor: 'grey',
+    backgroundColor: '#F7F7F7',
+  },
+  button: {
     marginBottom: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -107,27 +156,36 @@ const styles = StyleSheet.create({
     padding: 10,
     width: '49%',
     borderWidth: 2,
-    borderRadius: 25,
+    borderRadius: 10,
+    borderColor: 'grey',
     alignItems: 'center',
-    borderColor: '#071952',
     backgroundColor: '#F7F7F7',
   },
   buttonOn: {
     borderColor: 'white',
     backgroundColor: '#071952',
   },
-  buttonOfftext: {
+  buttonOffText: {
     fontSize: 16,
     color: 'black',
     fontWeight: 'bold',
   },
-  buttonOntext: {
+  buttonOnText: {
     fontSize: 16,
     color: 'white',
     fontWeight: 'bold',
   },
   scroll: {
     marginBottom: 10,
+  },
+  cardEmpty: {
+    padding: 32,
+    fontSize: 16,
+    borderWidth: 2,
+    borderRadius: 10,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    borderColor: '#071952',
   },
   card: {
     padding: 10,
@@ -140,7 +198,7 @@ const styles = StyleSheet.create({
   cardRow: {
     flexDirection: 'row',
   },
-  cardColumn: {
+  cardLeft: {
     flex: 1,
     marginRight: 5,
   },
@@ -156,7 +214,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: -5,
   },
-  cardButton: {
+  cardRight: {
     padding: 10,
     fontSize: 16,
     color: 'black',
@@ -165,6 +223,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     alignSelf: 'center',
+    borderColor: 'grey',
     backgroundColor: '#F7F7F7',
   },
 });
