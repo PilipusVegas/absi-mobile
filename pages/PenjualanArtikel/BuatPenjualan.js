@@ -1,85 +1,81 @@
-import { useState, useEffect } from 'react';
+import { apiUrl } from '../../globals.js';
+import { useState, useEffect, useCallback } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 
 const AbsiBuatPenjualan = ({ navigation }) => {
+  const [dataArtikel, setDataArtikel] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCount, setSelectedCount] = useState(0);
   const [selectedItems, setSelectedItems] = useState([]);
-  const [filteredItems, setFilteredItems] = useState([]);
-  const [dataArtikel] = useState([
-    { id: '1', kodeArtikel: 'FG-HXKL-205MX-C', namaArtikel: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)'},
-    { id: '2', kodeArtikel: 'FG-HXKL-205MX-C', namaArtikel: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)'},
-    { id: '3', kodeArtikel: 'FG-HXKL-205MX-C', namaArtikel: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)'},
-    { id: '4', kodeArtikel: 'FG-HXKL-205MX-C', namaArtikel: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)'},
-    { id: '5', kodeArtikel: 'FG-HXKL-205MX-C', namaArtikel: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)'},
-    { id: '6', kodeArtikel: 'FG-HXKL-205MX-C', namaArtikel: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)'},
-    { id: '7', kodeArtikel: 'FG-HXKL-205MX-C', namaArtikel: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)'},
-    { id: '8', kodeArtikel: 'FG-HXKL-205MX-C', namaArtikel: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)'},
-    { id: '9', kodeArtikel: 'FG-HXKL-205MX-C', namaArtikel: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)'},
-  ]);
-  const handleNavigate = () => {
+
+  const handleSearch = useCallback((text) => {
+    setSearchQuery(text);
+    const filtered = dataArtikel.filter((item) => item.kode.toLowerCase().indexOf(text.toLowerCase()) !== -1);
+    setDataArtikel(filtered);
+  }, [dataArtikel]);
+
+  const handleNavigate = useCallback(() => {
     if (selectedCount === 0) {
-      return;
+      return; 
     } else {
       navigation.navigate('KeranjangPenjualan', { selectedItems });
     }
-  };
-  const handleSearch = (text) => {
-    setSearchQuery(text);
-    const filtered = dataArtikel.filter(
-      (item) => item.kodeArtikel.toLowerCase().indexOf(text.toLowerCase()) !== -1
-    );
-    setFilteredItems(filtered);
-  };
-  const handleItemPress = (barang) => {
-    const itemIndex = selectedItems.findIndex((item) => item.id === barang.id);
+  }, [selectedCount, selectedItems, navigation]);
+
+  const handleItemPress = useCallback((barang) => {
+    const newSelectedItems = [...selectedItems];
+    const itemIndex = newSelectedItems.findIndex((item) => item.id === barang.id);
     if (itemIndex !== -1) {
-      const newSelectedItems = [...selectedItems];
       newSelectedItems.splice(itemIndex, 1);
-      setSelectedItems(newSelectedItems);
-      setSelectedCount(selectedItems.length - 1);
     } else {
-      setSelectedItems([...selectedItems, barang]);
-      setSelectedCount(selectedItems.length + 1);
+      newSelectedItems.push(barang);
     }
-  };
+    setSelectedCount(newSelectedItems.length);
+    setSelectedItems(newSelectedItems);
+  }, [selectedItems]);
+
+  const fetchData = useCallback(async () => {
+    try {
+      const id_toko = await AsyncStorage.getItem('id_toko');
+      const formData = new FormData();
+      formData.append('id_toko', id_toko || '');
+      const response = await fetch(apiUrl + '/listProdukToko', {method: 'POST', body: formData});
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        setDataArtikel(data);
+      }
+    } catch (error) {
+      //
+    }
+  }, []);
+
   useEffect(() => {
-    setFilteredItems(dataArtikel);
-  }, [dataArtikel]);
+    fetchData();
+  }, [fetchData]);
 
   return (
     <View style={styles.container}>
       <View style={styles.form}>
-        <TextInput
-          value={searchQuery}
-          style={styles.search}
-          selectionColor="black"
-          onChangeText={handleSearch}
-          autoCapitalize="characters"
-          placeholder="Cari Kode Artikel ..."
-        />
+        <TextInput value={searchQuery} style={styles.search} selectionColor="black" onChangeText={handleSearch} autoCapitalize="characters" placeholder="Cari Kode Artikel ..." />
         <Text style={styles.label}>LIST ARTIKEL</Text>
         <ScrollView style={styles.scroll}>
-          {filteredItems.map((barang, index) => (
+          {dataArtikel.map((barang, index) => (
             <TouchableOpacity key={index} style={styles.card} onPress={() => handleItemPress(barang)}>
               <View style={styles.cardRow}>
                 <View style={styles.cardColumn}>
-                  <Text style={styles.cardText1}>{`${barang.kodeArtikel}`}</Text>
-                  <Text style={styles.cardText2}>{`${barang.namaArtikel}`}</Text>
+                  <Text style={styles.cardText1}>{`${barang.kode}`}</Text>
+                  <Text style={styles.cardText2}>{`${barang.nama_produk}`}</Text>
                 </View>
-                <Text style={[styles.cardButton, {borderColor: selectedItems.some((item) => item.id === barang.id) ? 'red' : '#071952'}]}>
-                  {selectedItems.some((item) => item.id === barang.id) ? 'HAPUS' : 'TAMBAH'}
-                </Text>
+                <Text style={[styles.cardButton, { borderColor: selectedItems.some((item) => item.id === barang.id) ? 'red' : '#071952' }]}>{selectedItems.some((item) => item.id === barang.id) ? 'HAPUS' : 'TAMBAH'}</Text>
               </View>
             </TouchableOpacity>
           ))}
         </ScrollView>
         <TouchableOpacity onPress={handleNavigate} disabled={selectedCount === 0} style={[styles.buttonOn, selectedCount === 0 && styles.buttonOff]}>
-          <Text style={styles.buttonText}>
-            {selectedCount > 0 ? `${selectedCount} ARTIKEL TERPILIH` : '0 ARTIKEL TERPILIH'}
-          </Text>
-          <MaterialCommunityIcons name="arrow-right-bold" size={20} color="white" />
+          <Text style={styles.buttonText}>{selectedCount ? `${selectedCount} ARTIKEL TERPILIH` : '0 ARTIKEL TERPILIH'}</Text>
+          <MaterialCommunityIcons size={20} color="white" name="arrow-right-bold" />
         </TouchableOpacity>
       </View>
     </View>
@@ -103,7 +99,7 @@ const styles = StyleSheet.create({
     marginTop: -10,
     borderWidth: 2,
     marginBottom: 5,
-    borderRadius: 25,
+    borderRadius: 10,
     borderColor: 'grey',
     backgroundColor: '#F7F7F7',
   },
