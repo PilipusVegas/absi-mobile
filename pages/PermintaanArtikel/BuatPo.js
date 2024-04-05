@@ -1,3 +1,4 @@
+import { apiUrl } from '../../globals.js';
 import { useState, useEffect, useCallback } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -40,8 +41,7 @@ const AbsiBuatPO = ({ navigation }) => {
       const id_toko = await AsyncStorage.getItem('id_toko');
       const formData = new FormData();
       formData.append('id_toko', id_toko || '');
-      const apiUrl = 'https://globalindo-group.com/absi_demo/api/listProdukToko';
-      const response = await fetch(apiUrl, { method: 'POST', body: formData });
+      const response = await fetch(apiUrl + '/listProdukToko', {method: 'POST', body: formData});
       const data = await response.json();
       if (Array.isArray(data)) {
         setDataArtikel(data);
