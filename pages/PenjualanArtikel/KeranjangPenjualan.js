@@ -76,7 +76,6 @@ const handleQuantityIncrease = (itemId) => {
     setTotalItems(totalItemsCount);
     setTotalQuantity(totalQuantityCount);
     setIsButtonDisabled(totalQuantityCount === 0 || isAnyItemWithoutQuantity || !isDateSelected);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedQuantities, selectedDate]);
   useEffect(() => {
     if (selectedDate !== null) {
@@ -93,14 +92,10 @@ const handleQuantityIncrease = (itemId) => {
         <ScrollView style={styles.scroll}>
           {selectedItems.map((item, index) => (
             <View key={index} style={styles.card}>
-              <Text style={styles.cardText1}>{`${item.kodeArtikel}`}</Text>
-              <Text style={styles.cardText2}>{`${item.namaArtikel}`}</Text>
+              <Text style={styles.cardText1}>{`${item.kode}`}</Text>
+              <Text style={styles.cardText2}>{`${item.nama_produk}`}</Text>
               <View style={styles.cardLeft}>
-                <View>
-                  <Text style={styles.cardText2}>{`Stok: 50`}</Text>
-                  <Text style={styles.cardText2}>{`Satuan: Pcs`}</Text>
-                  <Text style={styles.cardText3}>{`Max. Stok: 100`}</Text>
-                </View>
+                <View><Text style={styles.cardText2}>{`Stok: ${item.qty}`}</Text></View>
                 <View style={styles.cardRight}>
                   <TouchableOpacity style={styles.icon1} onPress={() => handleQuantityDecrease(item.id)}>
                     <MaterialCommunityIcons size={20} name="minus" color="white"/>
@@ -127,11 +122,11 @@ const handleQuantityIncrease = (itemId) => {
             </TouchableOpacity>
           </View>
           <View style={styles.cardArtikel}>
-            <Text style={styles.cardTextleft}>Macam Artikel:</Text>
+            <Text style={styles.cardTextleft}>Total Artikel:</Text>
             <Text style={styles.cardTextright}>{totalItems}</Text>
           </View>
           <View style={styles.cardArtikel}>
-            <Text style={styles.cardTextleft}>Total Artikel:</Text>
+            <Text style={styles.cardTextleft}>Total Quantity:</Text>
             <Text style={styles.cardTextright}>{totalQuantity}</Text>
           </View>
           <DateTimePickerModal
