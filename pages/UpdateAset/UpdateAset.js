@@ -1,29 +1,33 @@
-import { useState } from 'react';
+import { apiUrl } from '../../globals.js';
+import { useState, useEffect } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, Alert, TextInput, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 
 const AbsiUpdateAset = ({ navigation }) => {
-  const [cardData, setCardData] = useState([
-    { quantity: '', condition: '', photoUri: null },
-    { quantity: '', condition: '', photoUri: null },
-    { quantity: '', condition: '', photoUri: null },
-    { quantity: '', condition: '', photoUri: null },
-    { quantity: '', condition: '', photoUri: null },
-  ]);
+  const [cardData, setCardData] = useState([]);
+  const [keterangan, setKeterangan] = useState('');
   const [isButtonDisabled, setIsButtonDisabled] = useState(true);
+
+  const capitalizeWords = (str) => {
+    return str.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+  };
+
   const handleQuantityChange = (text, index) => {
     const updatedCardData = [...cardData];
     updatedCardData[index].quantity = text;
     setCardData(updatedCardData);
     checkButtonStatus(updatedCardData);
   };
+
   const handleConditionSelect = (selectedCondition, index) => {
     const updatedCardData = [...cardData];
     updatedCardData[index].condition = selectedCondition;
     setCardData(updatedCardData);
     checkButtonStatus(updatedCardData);
   };
+
   const checkButtonStatus = (updatedCardData) => {
     const isAnyItemWithoutQuantity = updatedCardData.some(item => !item.quantity);
     const isAnyItemWithoutCondition = updatedCardData.some(item => !item.condition);
@@ -31,11 +35,46 @@ const AbsiUpdateAset = ({ navigation }) => {
     const isAllFieldsFilled = !isAnyItemWithoutQuantity && !isAnyItemWithoutCondition && !isAnyItemWithoutPhoto;
     setIsButtonDisabled(!isAllFieldsFilled);
   };
+
+  const fetchData = async () => {
+    try {
+      const idToko = await AsyncStorage.getItem('id_toko');
+      const formData = new FormData();
+      formData.append('id_toko', idToko);
+      const response = await fetch(apiUrl + '/getAset', {method: 'POST', body: formData});
+      const responseData = await response.json();
+      if (responseData.success && responseData.aset) {
+        setCardData(responseData.aset);
+        checkButtonStatus(responseData.aset);
+      }
+    } catch (error) {
+      //
+    }
+  };
+
+  const handleSendData = () => {
+    Alert.alert(
+      '',
+      'Apakah anda sudah yakin?',
+      [
+        {
+          text: 'Ya',
+          onPress: () => {navigation.navigate('Beranda')},
+        },
+        {
+          text: 'Tidak',
+          style: 'cancel',
+        },
+      ],
+      { cancelable: false }
+    );
+  };
+
   const openImagePicker = async (index) => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        alert('Memerlukan izin untuk dapat mengakses galeri');
+        alert('Izin akses galeri diperlukan untuk memilih foto.');
         return;
       }
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -51,59 +90,54 @@ const AbsiUpdateAset = ({ navigation }) => {
         checkButtonStatus(updatedCardData);
       }
     } catch (error) {
-      console.log('Error when picking an image:', error);
+      //
     }
   };
-  const handleSendData = () => {
-    Alert.alert(
-      '',
-      'Apakah anda sudah yakin?',
-      [
-        {
-          text: 'Ya',
-          onPress: () => {
-            navigation.navigate('Beranda');
-          },
-        },
-        {
-          text: 'Tidak',
-          style: 'cancel',
-        },
-      ],
-      { cancelable: false }
-    );
-  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   return (
     <View style={styles.container}>
       <View style={styles.form}>
-        <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
+        <ScrollView style={styles.scrollView}>
           {cardData.map((card, index) => (
-            <View key={index} style={styles.card}>
-              <TouchableOpacity style={[styles.cardLeft, { flex: 0.5 }]} onPress={() => openImagePicker(index)}>
-                {card.photoUri ? (
-                  <Image source={{ uri: card.photoUri }} style={styles.imageStyle} />
-                ) : (
-                  <MaterialCommunityIcons name="camera" size={24} color="black" />
-                )}
-              </TouchableOpacity>
-              <View style={[styles.cardRight, { flex: 0.5 }]}>
-                <Text style={styles.label}>{`Aset ${String.fromCharCode(65 + index)}`}</Text>
-                <Text style={styles.label}>Jumlah:</Text>
-                <TextInput style={styles.input} value={card.quantity} keyboardType="numeric" selectionColor="black" onChangeText={(text) => handleQuantityChange(text, index)}/>
-                <Text style={styles.label}>Kondisi:</Text>
-                <View style={styles.conditionContainer}>
-                  <TouchableOpacity onPress={() => handleConditionSelect('Bagus', index)} style={[styles.conditionButton, card.condition === 'Bagus' ? styles.selectedCondition : null]}>
-                    <Text style={[styles.conditionText, card.condition === 'Bagus' ? styles.selectedText : null]}>Bagus</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => handleConditionSelect('Rusak', index)} style={[styles.conditionButton, card.condition === 'Rusak' ? styles.selectedCondition : null]}>
-                    <Text style={[styles.conditionText, card.condition === 'Rusak' ? styles.selectedText : null]}>Rusak</Text>
-                  </TouchableOpacity>
+            <View style={styles.card}>
+              <Text style={styles.label}>{capitalizeWords(card.nama_aset)}</Text>
+              <View key={index} style={styles.cardRow}>
+                <TouchableOpacity style={[styles.cardLeft, { flex: 0.5 }]} onPress={() => openImagePicker(index)}>
+                  {card.foto_aset ? (
+                    <Image source={{ uri: card.foto_aset }} style={styles.imageStyle}/>
+                  ) : (
+                    <MaterialCommunityIcons name="camera" size={24} color="black"/>
+                  )}
+                </TouchableOpacity>
+                <View style={[styles.cardRight, { flex: 0.5 }]}>
+                  <Text style={styles.label}>Jumlah:</Text>
+                  <TextInput style={styles.input} keyboardType="numeric" selectionColor="black" value={card.qty_updated} onChangeText={(text) => handleQuantityChange(text, index)}/>
+                  <Text style={styles.label}>Kondisi:</Text>
+                  <View style={styles.conditionContainer}>
+                    <TouchableOpacity onPress={() => handleConditionSelect('Baik', index)} style={[styles.conditionButton, card.kondisi === 'Baik' ? styles.selectedCondition : null]}>
+                      <Text style={[styles.conditionText, card.kondisi === 'Baik' ? styles.selectedText : null]}>A</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleConditionSelect('Kurang Baik', index)} style={[styles.conditionButton, card.kondisi === 'Kurang Baik' ? styles.selectedCondition : null]}>
+                      <Text style={[styles.conditionText, card.kondisi === 'Kurang Baik' ? styles.selectedText : null]}>B</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleConditionSelect('Rusak', index)} style={[styles.conditionButton, card.kondisi === 'Rusak' ? styles.selectedCondition : null]}>
+                      <Text style={[styles.conditionText, card.kondisi === 'Rusak' ? styles.selectedText : null]}>C</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
+              <Text style={styles.label}>Keterangan:</Text>
+              <TextInput maxLength={50} numberOfLines={2} style={styles.input} selectionColor="black" onChangeText={setKeterangan} value={card.keterangan || '-'}/>
             </View>
           ))}
         </ScrollView>
+        <View style={styles.keterangan}>
+          <Text style={styles.keteranganText}> A = Baik || B = Kurang Baik || C = Rusak</Text>
+        </View>
         <TouchableOpacity onPress={handleSendData} disabled={isButtonDisabled} style={isButtonDisabled ? styles.buttonOff : styles.buttonOn}>
           <Text style={styles.floatingButtonText}>KIRIM</Text>
         </TouchableOpacity>
@@ -113,26 +147,39 @@ const AbsiUpdateAset = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#071952',
+  },
+  form: {
+    flex: 1,
+    padding: 20,
+    borderRadius: 25,
+    marginBottom: -20,
+    backgroundColor: 'white',
+  },
+  scrollView: {
+    flex: 1,
+    marginTop: -10,
+    marginBottom: 10,
+  },
+  card: {
+    padding: 10,
+    borderWidth: 2,
+    borderRadius: 10,
+    marginBottom: 10,
+    borderColor: '#071952',
+    flexDirection: 'column',
+    backgroundColor: 'white',
+  },
   label: {
     fontSize: 16,
     fontWeight: 'bold',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  imageStyle: {
-    width: 100,
-    height: 100,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  card: {
-    padding: 20,
-    borderWidth: 2,
-    borderRadius: 10,
-    marginBottom: 10,
+  cardRow: {
     flexDirection: 'row',
-    borderColor: '#071952',
-    backgroundColor: 'white',
   },
   cardLeft: {
     borderWidth: 2,
@@ -143,30 +190,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#F7F7F7',
   },
+  imageStyle: {
+    width: 100,
+    height: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   cardRight: {
     flex: 1,
   },
   input: {
     borderWidth: 2,
     borderRadius: 10,
+    paddingStart: 10,
     borderColor: 'grey',
-    paddingHorizontal: 10,
     backgroundColor: '#F7F7F7',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#071952',
-  },
-  scrollContainer: {
-    flex: 1,
-    marginBottom: 75,
-  },
-  form: {
-    flex: 1,
-    padding: 20,
-    borderRadius: 25,
-    marginBottom: -20,
-    backgroundColor: 'white',
   },
   conditionContainer: {
     flexDirection: 'row',
@@ -200,6 +238,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     backgroundColor: '#071952',
+    marginBottom: -10,
   },
   buttonOn: {
     bottom: 40,
@@ -211,12 +250,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     backgroundColor: '#071952',
+    marginBottom: -10,
   },
   floatingButtonText: {
     flex: 1,
     fontSize: 16,
     color: 'white',
+    fontWeight: 'bold',
     textAlign: 'center',
+  },
+  keterangan: {
+    padding: 10,
+    borderWidth: 2,
+    borderRadius: 10,
+    marginBottom: 65,
+    alignItems: 'center',
+    borderColor: '#071952',
+    backgroundColor: 'white',
+  },
+  keteranganText: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 export default AbsiUpdateAset;
