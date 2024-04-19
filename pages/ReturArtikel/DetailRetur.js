@@ -1,52 +1,60 @@
-import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { apiUrl } from '../../globals.js';
+import {useState, useEffect} from 'react';
+import {View, Text, StyleSheet, ScrollView} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const AbsiDetailRetur = ({ route }) => {
-  const [dataArtikel] = useState([
-    { id: '1', kodeArtikel: 'FG-HXKL-205MX-C', namaArtikel: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)', jumlah: '10' },
-    { id: '2', kodeArtikel: 'FG-HXKL-205MX-C', namaArtikel: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)', jumlah: '10' },
-    { id: '3', kodeArtikel: 'FG-HXKL-205MX-C', namaArtikel: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)', jumlah: '10' },
-    { id: '4', kodeArtikel: 'FG-HXKL-205MX-C', namaArtikel: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)', jumlah: '10' },
-    { id: '5', kodeArtikel: 'FG-HXKL-205MX-C', namaArtikel: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)', jumlah: '10' },
-  ]);
-  const [setSelectedCount] = useState(0);
-  const [totalItems, setTotalItems] = useState(0);
-  const [selectedItems, setSelectedItems] = useState([]);
-  const [filteredItems, setFilteredItems] = useState([]);
-  const { rm, status, tanggal } = route.params;
-  const handleItemPress = (barang) => {
-    const itemIndex = selectedItems.findIndex((item) => item.id === barang.id);
-    if (itemIndex !== -1) {
-      const newSelectedItems = [...selectedItems];
-      newSelectedItems.splice(itemIndex, 1);
-      setSelectedItems(newSelectedItems);
-      setSelectedCount(selectedItems.length - 1);
-    } else {
-      setSelectedItems([...selectedItems, barang]);
-      setSelectedCount(selectedItems.length + 1);
-    }
+const statusDescriptions = {
+  0: 'Menunggu di approve Leader',
+  1: 'Menunggu di approve MV',
+  2: 'Sudah di approve',
+  3: 'Proses Retur',
+  4: 'Proses Retur',
+  5: 'Selesai',
+  6: 'Di Tolak',
+};
+
+const AbsiDetailRetur = () => {
+  const [returData, setReturData] = useState(null);
+  const [detailReturData, setDetailReturData] = useState([]);
+  const totalItems = detailReturData.reduce((total, barang) => total + parseInt(barang.qty), 0);
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
   };
+
   useEffect(() => {
-    setFilteredItems(dataArtikel);
-  }, [dataArtikel]);
-  useEffect(() => {
-    let total = 0;
-    filteredItems.forEach((barang) => {
-      total += parseInt(barang.jumlah);
-    });
-    setTotalItems(total);
-  }, [filteredItems]);
+    const fetchData = async () => {
+      try {
+        const selectedIdRetur = await AsyncStorage.getItem('selected_id');
+        const formData = new FormData();
+        formData.append('id_retur', selectedIdRetur);
+        const response = await fetch(apiUrl + '/getReturDetail', { method: 'POST', body: formData });
+        const data = await response.json();
+        if (data.success) {
+          setReturData(data.retur);
+          setDetailReturData(data.detail);
+        }
+      } catch (error) {
+        //
+      }
+    };
+    fetchData();
+  }, []);
 
   return (
     <View style={styles.container}>
       <View style={styles.form}>
         <View style={styles.header}>
           <View style={styles.headerRow}>
-            <Text style={styles.headerLeft1}>{rm}</Text>
-            <Text style={styles.headerRight}>{tanggal}</Text>
+            <Text style={styles.headerLeft}>{returData && returData.id}</Text>
+            <Text style={styles.headerRight}>{returData && formatDate(returData.created_at)}</Text>
           </View>
-          <View style={styles.headera}>
-            <Text style={styles.headerLeft2}>{`Status: ${status}`}</Text>
+          <View style={styles.headerColumn}>
+            <Text style={styles.headerLeft}>{`Status: ${statusDescriptions[returData && returData.status]}`}</Text>
           </View>
         </View>
         <View style={styles.label}>
@@ -54,23 +62,23 @@ const AbsiDetailRetur = ({ route }) => {
           <Text style={styles.labelText2}>List Artikel</Text>
           <Text style={styles.labelText3}>Jumlah</Text>
         </View>
-        <ScrollView style={styles.scroll}>
-          {filteredItems.map((barang, index) => (
-            <View key={index} onPress={() => handleItemPress(barang)} style={[styles.card, barang.jumlah === '20' ? styles.cardBackground : null]}>
+        <ScrollView style={styles.scrollView}>
+          {detailReturData.map((barang, index) => (
+            <View key={index} style={styles.card}>
               <View style={styles.cardRow}>
-                <Text style={styles.cardText1}>{`${barang.id}.`}</Text>
+                <Text style={styles.cardText1}>{`${index + 1}.`}</Text>
                 <View style={styles.cardColumn}>
-                  <Text style={styles.cardText2}>{`${barang.kodeArtikel}`}</Text>
-                  <Text style={styles.cardText3}>{`${barang.namaArtikel}`}</Text>
+                  <Text style={styles.cardText2}>{`${barang.kode}`}</Text>
+                  <Text style={styles.cardText2}>{`${barang.nama_produk}`}</Text>
                 </View>
-                <Text style={styles.cardText5}>{`${barang.jumlah}`}</Text>
+                <Text style={styles.cardText3}>{`${barang.qty}`}</Text>
               </View>
             </View>
           ))}
         </ScrollView>
-        <View style={styles.labela}>
-          <Text style={styles.labelText}>Total Barang:</Text>
-          <Text style={styles.labelText}>{totalItems}</Text>
+        <View style={styles.footer}>
+          <Text style={styles.footerLabel}>Total Barang:</Text>
+          <Text style={styles.footerLabel}>{totalItems}</Text>
         </View>
       </View>
     </View>
@@ -103,25 +111,21 @@ const styles = StyleSheet.create({
     borderBottomColor: 'white',
     justifyContent: 'space-between',
   },
-  headera: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  headerLeft1: {
+  headerLeft: {
     fontSize: 16,
     color: 'white',
     textAlign: 'left',
     fontWeight: 'bold',
   },
-  headerLeft2: {
-    fontSize: 16,
-    color: 'white',
-    textAlign: 'left',
-  },
   headerRight: {
     fontSize: 16,
     color: 'white',
     textAlign: 'right',
+    fontWeight: 'bold',
+  },
+  headerColumn: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   label: {
     alignItems: 'center',
@@ -136,7 +140,7 @@ const styles = StyleSheet.create({
   },
   labelText2: {
     fontSize: 16,
-    marginLeft: -185,
+    marginLeft: -100,
     fontWeight: 'bold',
   },
   labelText3: {
@@ -144,7 +148,7 @@ const styles = StyleSheet.create({
     marginRight: 15,
     fontWeight: 'bold',
   },
-  scroll: {
+  scrollView: {
     marginBottom: 10,
   },
   card: {
@@ -153,36 +157,25 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#071952',
   },
-  cardBackground: {
-    backgroundColor: 'red',
-  },
   cardRow: {
     alignItems: 'center',
     flexDirection: 'row',
   },
+  cardText1: {
+    fontSize: 16,
+  },
   cardColumn: {
     flex: 1,
   },
-  cardText1: {
-    fontSize: 16,
-    marginLeft: 5,
-    fontWeight: 'bold',
-  },
   cardText2: {
     fontSize: 16,
-    marginLeft: 15,
-    fontWeight: 'bold',
+    marginLeft: 50,
   },
   cardText3: {
     fontSize: 16,
-    marginLeft: 15,
-  },
-  cardText5: {
-    fontSize: 16,
     marginRight: 10,
-    fontWeight: 'bold',
   },
-  labela: {
+  footer: {
     padding: 15,
     borderRadius: 10,
     marginBottom: 10,
@@ -190,7 +183,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#071952',
     justifyContent: 'space-between',
   },
-  labelText: {
+  footerLabel: {
     fontSize: 16,
     color: 'white',
     fontWeight: 'bold',
