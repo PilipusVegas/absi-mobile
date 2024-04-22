@@ -1,103 +1,90 @@
+import { apiUrl } from '../../globals.js';
 import { useState, useEffect } from 'react';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const statusDescriptions = {
+const statusData = {
   0: 'Menunggu di approve Leader',
   1: 'Menunggu di approve MV',
-  2: 'Sudah di approve MV',
-  3: 'Sedang di siapkan',
-  4: 'Sedang di kirim',
-  5: 'Selesai',
-  6: 'Di Tolak',
+  2: 'Selesai',
+  3: 'Di Tolak',
 };
 
-const AbsiBap = ({ navigation }) => {
-  const dataProses = [
-    { pm: 'BAP-202401001', status: '0', tanggal: '01/01/2024', modul: '0' },
-    { pm: 'BAP-202401001', status: '1', tanggal: '01/01/2024', modul: '0' },
-    { pm: 'BAP-202401001', status: '2', tanggal: '01/01/2024', modul: '0' },
-    { pm: 'BAP-202401001', status: '3', tanggal: '01/01/2024', modul: '0' },
-    { pm: 'BAP-202401001', status: '4', tanggal: '01/01/2024', modul: '0' },
-  ];
+const kategoriData = {
+  1: 'Pengiriman artikel',
+  2: 'Mutasi artikel',
+};
 
-  const dataSelesai = [
-    { pm: 'BAP-202401001', status: '5', tanggal: '01/01/2024', modul: '1' },
-    { pm: 'BAP-202401001', status: '5', tanggal: '01/01/2024', modul: '1' },
-    { pm: 'BAP-202401001', status: '5', tanggal: '01/01/2024', modul: '1' },
-  ];
+const AbsiDetailBap = ({ route }) => {
+  const [totalItems, setTotalItems] = useState(0);
+  const [dataArtikel, setDataArtikel] = useState([]);
+  const { id, status, kategori, catatan, id_kirim, created_at } = route.params;
 
-  const dataTolak = [
-    { pm: 'BAP-202401001', status: '6', tanggal: '01/01/2024', modul: '1' },
-  ];
-
-  const [dataToShow, setDataToShow] = useState([]);
-  const [searchText, setSearchText] = useState('');
-  const [activeButton, setActiveButton] = useState(null);
-  const allData = [...dataProses, ...dataSelesai, ...dataTolak];
-  const filteredData = dataToShow.filter((data) => data.pm.toLowerCase().includes(searchText.toLowerCase()));
-
-  const handleCardClick = (data) => {
-    let detailScreen = 'DetailBap';
-    navigation.navigate(detailScreen, { 
-      pm: data.pm,
-      status: data.status,
-      tanggal: data.tanggal,
-      modul: data.modul,
-    });
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
   };
-  
-  const handleButtonClick = (buttonName) => {
-    setActiveButton(buttonName);
-    if (buttonName === 'Proses') {
-      setDataToShow(dataProses);
-    } else if (buttonName === 'Tolak') {
-      setDataToShow(dataTolak);
-    } else if (buttonName === 'Selesai') {
-      setDataToShow(dataSelesai);
-    } else if (buttonName === 'All') {
-      setDataToShow(allData);
-    }
-  };
-  
-  useEffect(() => {setDataToShow(allData)}, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const selectedIdBap = await AsyncStorage.getItem('selected_id');
+        const formData = new FormData();
+        formData.append('id_bap', selectedIdBap);
+        const response = await fetch(apiUrl + '/getBapDetail', { method: 'POST', body: formData });
+        const data = await response.json();
+        if (data.success) {
+          setDataArtikel(data.detail);
+        }
+      } catch (error) {
+        //
+      }
+    };
+    fetchData();
+  }, [id]);
+
+  useEffect(() => {
+    let total = 0;
+    dataArtikel.forEach((barang) => { total += parseInt(barang.updatedJumlah) });
+    setTotalItems(total);
+  }, [dataArtikel]);
 
   return (
     <View style={styles.container}>
       <View style={styles.form}>
-        <TextInput value={searchText} style={styles.search} selectionColor="black" autoCapitalize="characters" placeholder="Cari Kode Artikel ..." onChangeText={(text) => setSearchText(text)}/>
-
-        <View style={styles.buttonOption}>
-          <TouchableOpacity onPress={() => handleButtonClick('Proses')} style={[styles.buttonOff, activeButton === 'Proses' && styles.buttonOn]}>
-            <Text style={[styles.buttonOffText, activeButton === 'Proses' && styles.buttonOnText]}>DI PROSES</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleButtonClick('Selesai')} style={[styles.buttonOff, activeButton === 'Selesai' && styles.buttonOn]}>
-            <Text style={[styles.buttonOffText, activeButton === 'Selesai' && styles.buttonOnText]}>SELESAI</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleButtonClick('Tolak')} style={[styles.buttonOff, activeButton === 'Tolak' && styles.buttonOn]}>
-            <Text style={[styles.buttonOffText, activeButton === 'Tolak' && styles.buttonOnText]}>DI TOLAK</Text>
-          </TouchableOpacity>
+        <View style={styles.header}>
+          <View style={styles.headerRow}>
+            <Text style={styles.headerLabel}>{id_kirim}</Text>
+            <Text style={styles.headerLabel}>{formatDate(created_at)}</Text>
+          </View>
+          <View style={styles.headerColumn}>
+            <Text style={styles.headerLabel}>Kategori: {kategoriData[kategori]}</Text>
+          </View>
+          <View style={styles.headerColumn}>
+            <Text style={styles.headerLabel}>Status: {statusData[status]}</Text>
+          </View>
+          <View style={styles.headerColumn}>
+            <Text style={styles.headerLabel}>Catatan: {catatan}</Text>
+          </View>
         </View>
-
         <ScrollView style={styles.scrollView}>
-          {filteredData.map((data, index) => (
-            <TouchableOpacity key={index} onPress={() => handleCardClick(data)} style={[styles.card, data.status === '5' && { borderColor: 'green' }, data.status === '6' && { borderColor: 'red' }]}>
-              <View style={styles.cardMain}>
-                <Text style={styles.cardText}>{`${data.pm}`}</Text>
-                <Text style={styles.cardText}>{`${data.tanggal}`}</Text>
+          {dataArtikel.map((barang, index) => (
+            <View key={index} style={[styles.card, barang.updatedJumlah === '20' ? styles.cardBackground : null]}>
+              <View style={styles.cardRow}>
+                <Text style={styles.headerText1}>{`${index + 1}.`}</Text>
+                <View style={styles.cardColumn}>
+                  <Text style={styles.headerText2}>{`${barang.kode}`}</Text>
+                  <Text style={styles.headerText2}>{`${barang.nama_produk}`}</Text>
+                  <Text style={styles.headerText2}>{`Quantity: ${barang.qty_awal}`} || {`Update: ${barang.qty_update}`}</Text>
+                </View>
               </View>
-              <View style={styles.cardMain}>
-                <Text style={styles.cardText}>{`Status: ${statusDescriptions[data.status]}`}</Text>
-              </View>
-            </TouchableOpacity>
+            </View>
           ))}
         </ScrollView>
       </View>
-
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('BuatBap')}>
-        <MaterialCommunityIcons size={20} name="plus" color="white"/>
-        <Text style={styles.buttonText}>BUAT BAP</Text>
-      </TouchableOpacity>
     </View>
   );
 };
@@ -114,79 +101,53 @@ const styles = StyleSheet.create({
     marginBottom: -20,
     backgroundColor: 'white',
   },
-  search: {
-    padding: 10,
+  header: {
+    padding: 15,
     marginTop: -10,
-    borderWidth: 2,
-    borderRadius: 25,
+    borderRadius: 10,
     marginBottom: 10,
-    borderColor: 'grey',
-    backgroundColor: '#F7F7F7',
-  },
-  buttonOption: {
-    marginBottom: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  buttonOff: {
-    padding: 10,
-    width: '32%',
-    borderWidth: 2,
-    borderRadius: 25,
-    alignItems: 'center',
-    borderColor: '#071952',
-    backgroundColor: '#F7F7F7',
-  },
-  buttonOn: {
-    borderColor: 'white',
+    textAlign: 'center',
     backgroundColor: '#071952',
   },
-  buttonOffText: {
-    fontSize: 16,
-    color: 'black',
-    fontWeight: 'bold',
+  headerRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: 'white',
+    justifyContent: 'space-between',
   },
-  buttonOnText: {
+  headerLabel: {
     fontSize: 16,
     color: 'white',
     fontWeight: 'bold',
+  },
+  headerColumn: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   scrollView: {
-    marginBottom: 70,
+    marginBottom: 10,
   },
   card: {
-    padding: 10,
-    borderWidth: 2,
-    borderRadius: 10,
-    marginBottom: 10,
-    borderColor: '#071952',
-    backgroundColor: 'white',
+    width: '95%',
+    marginBottom: 5,
+    borderBottomWidth: 2,
+    borderBottomColor: '#071952',
   },
-  cardMain: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  cardText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  button: {
-    bottom: 10,
-    padding: 15,
-    width: '90%',
-    borderRadius: 10,
-    alignSelf: 'center',
-    position: 'absolute',
+  cardRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    backgroundColor: '#071952',
   },
-  buttonText: {
-    flex: 1,
-    fontSize: 20,
-    color: 'white',
+  headerText1: {
+    fontSize: 16,
+    marginLeft: 5,
     fontWeight: 'bold',
-    textAlign: 'center',
+  },
+  cardColumn: {
+    flex: 1,
+  },
+  headerText2: {
+    fontSize: 16,
+    marginLeft: 20,
   },
 });
-export default AbsiBap;
+export default AbsiDetailBap;
