@@ -1,36 +1,54 @@
+import { apiUrl } from '../../globals.js';
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const statusDescriptions = {
+const statusData = {
   0: 'Menunggu di approve Leader',
   1: 'Menunggu di approve MV',
-  2: 'Sudah di approve MV',
-  3: 'Sedang di siapkan',
-  4: 'Sedang di kirim',
-  5: 'Selesai',
-  6: 'Di Tolak',
+  2: 'Selesai',
+  3: 'Di Tolak',
 };
 
-const modulDescriptions = {
-  0: 'Penerimaan artikel',
-  1: 'Mutasi artikel',
+const kategoriData = {
+  1: 'Pengiriman artikel',
+  2: 'Mutasi artikel',
 };
 
 const AbsiDetailBap = ({ route }) => {
-  const [dataArtikel, setDataArtikel] = useState([
-    { id: '1', kodeArtikel: 'FG-HXKL-205MX-C', namaArtikel: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)', quantity: '100', update: '100' },
-    { id: '2', kodeArtikel: 'FG-HXKL-205MX-C', namaArtikel: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)', quantity: '100', update: '100' },
-    { id: '3', kodeArtikel: 'FG-HXKL-205MX-C', namaArtikel: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)', quantity: '100', update: '100' },
-    { id: '4', kodeArtikel: 'FG-HXKL-205MX-C', namaArtikel: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)', quantity: '100', update: '100' },
-    { id: '5', kodeArtikel: 'FG-HXKL-205MX-C', namaArtikel: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)', quantity: '100', update: '100' },
-  ]);
-
   const [totalItems, setTotalItems] = useState(0);
-  const { pm, status, tanggal, modul } = route.params;
+  const [dataArtikel, setDataArtikel] = useState([]);
+  const { id, status, kategori, catatan, id_kirim, created_at } = route.params;
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const selectedIdBap = await AsyncStorage.getItem('selected_id');
+        const formData = new FormData();
+        formData.append('id_bap', selectedIdBap);
+        const response = await fetch(apiUrl + '/getBapDetail', { method: 'POST', body: formData });
+        const data = await response.json();
+        if (data.success) {
+          setDataArtikel(data.detail);
+        }
+      } catch (error) {
+        //
+      }
+    };
+    fetchData();
+  }, [id]);
 
   useEffect(() => {
     let total = 0;
-    dataArtikel.forEach((barang) => {total += parseInt(barang.updatedJumlah)});
+    dataArtikel.forEach((barang) => { total += parseInt(barang.updatedJumlah) });
     setTotalItems(total);
   }, [dataArtikel]);
 
@@ -39,26 +57,28 @@ const AbsiDetailBap = ({ route }) => {
       <View style={styles.form}>
         <View style={styles.header}>
           <View style={styles.headerRow}>
-            <Text style={styles.headerLabel}>{pm}</Text>
-            <Text style={styles.headerLabel}>{tanggal}</Text>
+            <Text style={styles.headerLabel}>{id_kirim}</Text>
+            <Text style={styles.headerLabel}>{formatDate(created_at)}</Text>
           </View>
           <View style={styles.headerColumn}>
-            <Text style={styles.headerLabel}>{`Modul: ${modulDescriptions[modul] || modul}`}</Text>
+            <Text style={styles.headerLabel}>Kategori: {kategoriData[kategori]}</Text>
           </View>
           <View style={styles.headerColumn}>
-            <Text style={styles.headerLabel}>{`Status: ${statusDescriptions[status] || status}`}</Text>
+            <Text style={styles.headerLabel}>Status: {statusData[status]}</Text>
+          </View>
+          <View style={styles.headerColumn}>
+            <Text style={styles.headerLabel}>Catatan: {catatan}</Text>
           </View>
         </View>
-
-        <ScrollView style={styles.scroll}>
+        <ScrollView style={styles.scrollView}>
           {dataArtikel.map((barang, index) => (
             <View key={index} style={[styles.card, barang.updatedJumlah === '20' ? styles.cardBackground : null]}>
               <View style={styles.cardRow}>
-                <Text style={styles.headerText1}>{`${barang.id}.`}</Text>
+                <Text style={styles.headerText1}>{`${index + 1}.`}</Text>
                 <View style={styles.cardColumn}>
-                  <Text style={styles.headerText2}>{`${barang.kodeArtikel}`}</Text>
-                  <Text style={styles.headerText2}>{`${barang.namaArtikel}`}</Text>
-                  <Text style={styles.headerText2}>{`Quantity: ${barang.quantity}`} || {`Update: ${barang.update}`}</Text>
+                  <Text style={styles.headerText2}>{`${barang.kode}`}</Text>
+                  <Text style={styles.headerText2}>{`${barang.nama_produk}`}</Text>
+                  <Text style={styles.headerText2}>{`Quantity: ${barang.qty_awal}`} || {`Update: ${barang.qty_update}`}</Text>
                 </View>
               </View>
             </View>
@@ -104,7 +124,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  scroll: {
+  scrollView: {
     marginBottom: 10,
   },
   card: {
