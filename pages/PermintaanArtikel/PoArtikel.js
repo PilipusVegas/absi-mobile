@@ -1,25 +1,92 @@
+import { apiUrl } from '../../globals.js';
 import {useState, useEffect} from 'react';
 import {MaterialCommunityIcons} from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity} from 'react-native';
-import { apiUrl } from '../../globals.js';
+import {View, Text, FlatList, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator} from 'react-native';
 
-const statusDescriptions = {
-  0: 'Menunggu di approve Leader',
-  1: 'Menunggu di approve MV',
-  2: 'Sudah di approve MV',
-  3: 'Sedang di siapkan',
-  4: 'Sedang di kirim',
-  5: 'Selesai',
-  6: 'Di Tolak',
+const statusData = {
+  0: 'Permintaan artikel belum disetujui TL',
+  1: 'Permintaan artikel belum disetujui MV',
+  2: 'Permintaan artikel sudah disetujui',
+  3: 'Permintaan artikel sedang diproses',
+  4: 'Permintaan artikel sedang dikirim',
+  5: 'Permintaan artikel selesai',
+  6: 'Permintaan artikel ditolak',
 };
 
 const AbsiPOArtikel = ({route, navigation}) => {
   const [idToko, setIdToko] = useState(null);
   const [dataToShow, setDataToShow] = useState([]);
   const [searchText, setSearchText] = useState('');
-  const [activeButton, setActiveButton] = useState(null);
-  const handleButtonClick = (buttonName) => {setActiveButton(buttonName)};
+  const [isLoading, setIsLoading] = useState(false);
+  const [activeButton, setActiveButton] = useState('Proses');
+
+  const handleButtonClick = (buttonName) => {
+    setActiveButton(buttonName)
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  const handleCardClick = async (data) => {
+    try {
+      await AsyncStorage.setItem('selected_id_po', data.id);
+      navigation.navigate('DetailPo', { 
+        pm: data.pm,
+      });
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+
+  const fetchData = async (id_toko) => {
+    setIsLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('id_toko', id_toko);
+      const response = await fetch(apiUrl + '/getPo', {method: 'POST', body: formData});
+      const data = await response.json();
+      if (data.success) {
+        const idPoArray = data.permintaan.map(item => item.id);
+        await AsyncStorage.setItem('id_po', JSON.stringify(idPoArray));
+        setDataToShow(data.permintaan);
+        setTimeout(() => {setIsLoading(false)}, 500);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setIsLoading(false);
+    }
+  };
+
+  const renderFilteredData = () => {
+    if (isLoading) {
+      return <ActivityIndicator size="large" color="#071952"/>;
+    }
+    let filteredData = dataToShow;
+    if (searchText.trim() !== '') {
+      filteredData = filteredData.filter(item => item.id.toString().toLowerCase().includes(searchText.toLowerCase().trim()));
+    }
+    if (activeButton === 'Proses') {
+      filteredData = filteredData.filter(data => [0, 1, 2, 3, 4].includes(parseInt(data.status)));
+    } else if (activeButton === 'Selesai') {
+      filteredData = filteredData.filter(data => parseInt(data.status) === 5);
+    } else if (activeButton === 'Tolak') {
+      filteredData = filteredData.filter(data => parseInt(data.status) === 6);
+    }
+    if (filteredData.length === 0) {
+      return <Text style={styles.cardEmpty}>"TIDAK ADA DATA"</Text>;
+    }
+    return renderData(filteredData);
+  };
+
+  useEffect(() => {
+    setActiveButton('Proses');
+  }, [route.params]); 
 
   useEffect(() => {
     const fetchDataBasedOnParams = async () => {
@@ -33,90 +100,55 @@ const AbsiPOArtikel = ({route, navigation}) => {
             const storedIdToko = await AsyncStorage.getItem('id_toko');
             if (storedIdToko) {setIdToko(storedIdToko); fetchData(storedIdToko)}
           } catch (error) {
-            //
+            console.error('Error fetching data:', error);
           }
         };
         getStoredIdToko();
       }
     };
     fetchDataBasedOnParams();
-  }, [route.params]);
-
-  const handleCardClick = async (data) => {
-    try {
-      await AsyncStorage.setItem('selected_id_po', data.id);
-      navigation.navigate('DetailPo', { 
-        pm: data.pm,
-        status: data.status,
-        tanggal: data.tanggal,
-      });
-    } catch (error) {
-      //
-    }
-  };
-
-  const renderFilteredData = () => {
-    let filteredData = dataToShow;
-    if (searchText.trim() !== '') {filteredData = filteredData.filter(item => item.id.toString().toLowerCase().includes(searchText.toLowerCase().trim()))}
-    if (activeButton === 'Proses') {
-      filteredData = filteredData.filter(data => [0, 1, 2, 3, 4].includes(parseInt(data.status)));
-    } else if (activeButton === 'Selesai') {
-      filteredData = filteredData.filter(data => parseInt(data.status) === 5);
-    } else if (activeButton === 'Tolak') {
-      filteredData = filteredData.filter(data => parseInt(data.status) === 6);
-    }
-    return renderData(filteredData);
-  };
-
-  const fetchData = async (id_toko) => {
-    try {
-      const formData = new FormData();
-      formData.append('id_toko', id_toko);
-      const response = await fetch(apiUrl + '/getPo', {method: 'POST', body: formData});
-      const data = await response.json();
-      if (data.success) {
-        const idPoArray = data.permintaan.map(item => item.id);
-        await AsyncStorage.setItem('id_po', JSON.stringify(idPoArray));
-        setDataToShow(data.permintaan);
-      }
-    } catch (error) {
-      //
-    }
-  };
+  }, [route.params]); 
 
   const renderData = (data) => {
     return (
-      <ScrollView style={styles.scroll}>
-        {data.map((item, index) => (
-          <TouchableOpacity key={index} onPress={() => handleCardClick(item)} style={[styles.card, item.status === '0' && {borderColor: '#071952'}, item.status === '6' && {borderColor: 'red'}]}>
-            <Text style={styles.cardText1}>{`${item.id}`}</Text>
-            <Text style={styles.cardText2}>{`Status: ${statusDescriptions[item.status]}`}</Text>
-            <Text style={styles.cardText3}>{`Tanggal: ${new Date(item.created_at).toLocaleDateString()}`}</Text>
+      <FlatList
+        data={data}
+        style={styles.flatList}
+        renderItem={({ item }) => (
+          <TouchableOpacity key={item.id} onPress={() => handleCardClick(item)} style={[styles.cardButton, item.status === '0' && { borderColor: '#071952' }, item.status === '6' && { borderColor: 'red' }]}>
+            <View style={styles.card}>
+              <Text style={styles.cardText1}>{`${item.id}`}</Text>
+              <Text style={styles.cardText2}>{`${formatDate(item.created_at)}`}</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardText3}>{`Status: ${statusData[item.status]}`}</Text>
+            </View>
           </TouchableOpacity>
-        ))}
-      </ScrollView>
+        )}
+        keyExtractor={(item) => item.id.toString()}
+      />
     );
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.form}>
-        <TextInput value={searchText} style={styles.search} selectionColor="black" autoCapitalize="none" placeholder="Cari ID Artikel ..." onChangeText={(text) => setSearchText(text)}/>
-        <View style={styles.buttonRow}>
+        <TextInput value={searchText} style={styles.textInput} selectionColor="black" autoCapitalize="none" placeholder="Cari ID Permintaan Artikel ..." onChangeText={(text) => setSearchText(text)}/>
+        <View style={styles.buttonMenu}>
           <TouchableOpacity onPress={() => handleButtonClick('Proses')} style={[styles.buttonOff, activeButton === 'Proses' && styles.buttonOn]}>
-            <Text style={[styles.buttonOfftext, activeButton === 'Proses' && styles.buttonOntext]}>DIPROSES</Text>
+            <Text style={[styles.buttonOfftext, activeButton === 'Proses' && styles.buttonOntext]}>PROSES</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => handleButtonClick('Selesai')} style={[styles.buttonOff, activeButton === 'Selesai' && styles.buttonOn]}>
             <Text style={[styles.buttonOfftext, activeButton === 'Selesai' && styles.buttonOntext]}>SELESAI</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => handleButtonClick('Tolak')} style={[styles.buttonOff, activeButton === 'Tolak' && styles.buttonOn]}>
-            <Text style={[styles.buttonOfftext, activeButton === 'Tolak' && styles.buttonOntext]}>DITOLAK</Text>
+            <Text style={[styles.buttonOfftext, activeButton === 'Tolak' && styles.buttonOntext]}>TOLAK</Text>
           </TouchableOpacity>
         </View>
         {renderFilteredData()}
       </View>
-      <TouchableOpacity style={styles.buttonColumn} onPress={() => navigation.navigate('BuatPo')}>
-        <MaterialCommunityIcons size={20} name="plus" color="white" />
+      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('BuatPo')}>
+        <MaterialCommunityIcons size={20} name="plus" color="white"/>
         <Text style={styles.buttonText}>BUAT PO</Text>
       </TouchableOpacity>
     </View>
@@ -135,7 +167,7 @@ const styles = StyleSheet.create({
     marginBottom: -20,
     backgroundColor: 'white',
   },
-  search: {
+  textInput: {
     padding: 10,
     marginTop: -10,
     borderWidth: 2,
@@ -144,7 +176,7 @@ const styles = StyleSheet.create({
     borderColor: 'grey',
     backgroundColor: '#F7F7F7',
   },
-  buttonRow: {
+  buttonMenu: {
     marginBottom: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -172,16 +204,26 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
   },
-  scroll: {
+  cardEmpty: {
+    padding: 15,
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  flatList: {
     marginBottom: 70,
   },
-  card: {
+  cardButton: {
     padding: 10,
     borderWidth: 2,
     borderRadius: 10,
     marginBottom: 10,
     borderColor: '#071952',
-    backgroundColor: 'white',
+    backgroundColor: '#F7F7F7',
+  },
+  card: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   cardText1: {
     fontSize: 16,
@@ -190,12 +232,13 @@ const styles = StyleSheet.create({
   },
   cardText2: {
     fontSize: 16,
+    marginTop: -5,
   },
   cardText3: {
     fontSize: 16,
     marginBottom: -5,
   },
-  buttonColumn: {
+  button: {
     bottom: 10,
     padding: 15,
     width: '90%',
