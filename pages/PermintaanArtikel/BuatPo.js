@@ -1,19 +1,21 @@
-import { apiUrl } from '../../globals.js';
-import { useState, useEffect, useCallback } from 'react';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import {apiUrl} from '../../globals.js';
+import {useState, useEffect, useCallback} from 'react';
+import {MaterialCommunityIcons} from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import {View, Text, FlatList, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator} from 'react-native';
 
 const AbsiBuatPO = ({ navigation }) => {
+  const [isLoading, setIsLoading] = useState(false);
   const [dataArtikel, setDataArtikel] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCount, setSelectedCount] = useState(0);
   const [selectedItems, setSelectedItems] = useState([]);
+  const [filteredDataArtikel, setFilteredDataArtikel] = useState([]);
 
   const handleSearch = useCallback((text) => {
     setSearchQuery(text);
-    const filtered = dataArtikel.filter((item) => item.kode.toLowerCase().indexOf(text.toLowerCase()) !== -1);
-    setDataArtikel(filtered);
+    const filtered = dataArtikel.filter((item) => item.kode.toLowerCase().includes(text.toLowerCase()));
+    setFilteredDataArtikel(filtered);
   }, [dataArtikel]);
 
   const handleNavigate = useCallback(() => {
@@ -37,6 +39,7 @@ const AbsiBuatPO = ({ navigation }) => {
   }, [selectedItems]);
 
   const fetchData = useCallback(async () => {
+    setIsLoading(true);
     try {
       const id_toko = await AsyncStorage.getItem('id_toko');
       const formData = new FormData();
@@ -45,37 +48,46 @@ const AbsiBuatPO = ({ navigation }) => {
       const data = await response.json();
       if (Array.isArray(data)) {
         setDataArtikel(data);
+        setFilteredDataArtikel(data);
+        setTimeout(() => {setIsLoading(false)}, 200);
       }
     } catch (error) {
-      //
+      console.error('Error fetching data:', error);
+      setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, []);
 
   return (
     <View style={styles.container}>
       <View style={styles.form}>
-        <TextInput value={searchQuery} style={styles.search} selectionColor="black" onChangeText={handleSearch} autoCapitalize="characters" placeholder="Cari Kode Artikel ..." />
-        <Text style={styles.label}>LIST ARTIKEL</Text>
-        <ScrollView style={styles.scroll}>
-          {dataArtikel.map((barang, index) => (
-            <TouchableOpacity key={index} style={styles.card} onPress={() => handleItemPress(barang)}>
-              <View style={styles.cardRow}>
-                <View style={styles.cardColumn}>
-                  <Text style={styles.cardText1}>{`${barang.kode}`}</Text>
-                  <Text style={styles.cardText2}>{`${barang.nama_produk}`}</Text>
+        <TextInput value={searchQuery} selectionColor="black" style={styles.textInput} onChangeText={handleSearch} autoCapitalize="characters" placeholder="Cari ID Artikel ..."/>
+        {isLoading ? (
+          <ActivityIndicator size="large" color="#071952"/>
+        ) : (
+          <FlatList
+            style={styles.flatList}
+            data={filteredDataArtikel}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+              <TouchableOpacity style={styles.card} onPress={() => handleItemPress(item)}>
+                <View style={styles.cardRow}>
+                  <View style={styles.cardColumn}>
+                    <Text style={styles.cardText1}>{`${item.kode}`}</Text>
+                    <Text style={styles.cardText2}>{`${item.nama_produk}`}</Text>
+                  </View>
+                  <Text style={[styles.cardButton, { borderColor: selectedItems.some((selectedItem) => selectedItem.id === item.id) ? 'red' : '#071952' }]}>{selectedItems.some((selectedItem) => selectedItem.id === item.id) ? 'HAPUS' : 'TAMBAH'}</Text>
                 </View>
-                <Text style={[styles.cardButton, { borderColor: selectedItems.some((item) => item.id === barang.id) ? 'red' : '#071952' }]}>{selectedItems.some((item) => item.id === barang.id) ? 'HAPUS' : 'TAMBAH'}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+              </TouchableOpacity>
+            )}
+          />
+        )}
         <TouchableOpacity onPress={handleNavigate} disabled={selectedCount === 0} style={[styles.buttonOn, selectedCount === 0 && styles.buttonOff]}>
           <Text style={styles.buttonText}>{selectedCount ? `${selectedCount} ARTIKEL TERPILIH` : '0 ARTIKEL TERPILIH'}</Text>
-          <MaterialCommunityIcons size={20} color="white" name="arrow-right-bold" />
+          <MaterialCommunityIcons size={25} color="white" name="arrow-right-bold"/>
         </TouchableOpacity>
       </View>
     </View>
@@ -94,23 +106,16 @@ const styles = StyleSheet.create({
     marginBottom: -20,
     backgroundColor: 'white',
   },
-  search: {
+  textInput: {
     padding: 10,
     marginTop: -10,
     borderWidth: 2,
-    marginBottom: 5,
+    marginBottom: 10,
     borderRadius: 10,
     borderColor: 'grey',
     backgroundColor: '#F7F7F7',
   },
-  label: {
-    fontSize: 16,
-    marginBottom: 5,
-    fontWeight: 'bold',
-    alignSelf: 'center',
-  },
-  scroll: {
-    flex: 1,
+  flatList: {
     marginBottom: 70,
   },
   card: {
@@ -138,7 +143,7 @@ const styles = StyleSheet.create({
     marginBottom: -5,
   },
   cardButton: {
-    padding: 10,
+    padding: 5,
     fontSize: 16,
     color: 'black',
     borderWidth: 2,
