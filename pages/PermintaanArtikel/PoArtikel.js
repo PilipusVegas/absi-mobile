@@ -51,21 +51,24 @@ const AbsiPOArtikel = ({route, navigation}) => {
       formData.append('id_toko', id_toko);
       const response = await fetch(apiUrl + '/getPo', {method: 'POST', body: formData});
       const data = await response.json();
+      setTimeout(() => {setIsLoading(false)}, 200);
       if (data.success) {
         const idPoArray = data.permintaan.map(item => item.id);
         await AsyncStorage.setItem('id_po', JSON.stringify(idPoArray));
         setDataToShow(data.permintaan);
-        setTimeout(() => {setIsLoading(false)}, 500);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
       setIsLoading(false);
     }
   };
-
+  
   const renderFilteredData = () => {
     if (isLoading) {
       return <ActivityIndicator size="large" color="#071952"/>;
+    }
+    if (dataToShow.length === 0) {
+      return <Text style={styles.cardEmpty}>"TIDAK ADA DATA"</Text>;
     }
     let filteredData = dataToShow;
     if (searchText.trim() !== '') {
@@ -78,11 +81,21 @@ const AbsiPOArtikel = ({route, navigation}) => {
     } else if (activeButton === 'Tolak') {
       filteredData = filteredData.filter(data => parseInt(data.status) === 6);
     }
-    if (filteredData.length === 0) {
+    const noDataForAnyCategory = filteredData.every(item => {
+      if (activeButton === 'Proses') {
+        return ![0, 1, 2, 3, 4].includes(parseInt(item.status));
+      } else if (activeButton === 'Selesai') {
+        return parseInt(item.status) !== 5;
+      } else if (activeButton === 'Tolak') {
+        return parseInt(item.status) !== 6;
+      }
+      return false;
+    });
+    if (noDataForAnyCategory) {
       return <Text style={styles.cardEmpty}>"TIDAK ADA DATA"</Text>;
     }
     return renderData(filteredData);
-  };
+  };  
 
   useEffect(() => {
     setActiveButton('Proses');
@@ -148,7 +161,7 @@ const AbsiPOArtikel = ({route, navigation}) => {
         {renderFilteredData()}
       </View>
       <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('BuatPo')}>
-        <MaterialCommunityIcons size={20} name="plus" color="white"/>
+        <MaterialCommunityIcons size={25} name="plus" color="white"/>
         <Text style={styles.buttonText}>BUAT PO</Text>
       </TouchableOpacity>
     </View>
