@@ -1,4 +1,4 @@
-import { apiUrl } from '../../globals.js';
+import {apiUrl} from '../../globals.js';
 import {useState, useEffect} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {View, Text, FlatList, StyleSheet, ActivityIndicator} from 'react-native';
@@ -15,8 +15,10 @@ const statusData = {
 
 const AbsiDetailPO = () => {
   const [poData, setPoData] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [detailPoData, setDetailPoData] = useState([]);
+
+  const noDataForAnyCategory = !isLoading && detailPoData.length === 0 && !poData;
   const totalItems = detailPoData.reduce((total, barang) => total + parseInt(barang.qty), 0);
 
   const formatDate = (dateString) => {
@@ -28,8 +30,12 @@ const AbsiDetailPO = () => {
   };
 
   useEffect(() => {
+    const timeout = setTimeout(() => {setIsLoading(false)}, 200);
+    return () => clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
     const fetchData = async () => {
-      setIsLoading(true);
       try {
         const selectedIdPo = await AsyncStorage.getItem('selected_id_po');
         const formData = new FormData();
@@ -38,12 +44,12 @@ const AbsiDetailPO = () => {
         const data = await response.json();
         if (data.success) {
           setPoData(data.po);
-          setDetailPoData(data.detail_po)
-          setTimeout(() => {setIsLoading(false)}, 500);
+          setDetailPoData(data.detail_po);
         }
       } catch (error) {
         console.error('Error fetching data:', error);
-        setIsLoading(false);
+      } finally {
+        setTimeout(() => {setIsLoading(false)}, 200);
       }
     };
     fetchData();
@@ -53,38 +59,45 @@ const AbsiDetailPO = () => {
     <View style={styles.container}>
       <View style={styles.form}>
         {isLoading ? (
-          <View><ActivityIndicator size="large" color="#071952"/></View>
+          <ActivityIndicator size="large" color="#071952"/>
         ) : (
           <>
-            <View style={styles.header}>
-              <View style={styles.headerCard}>
-                <Text style={styles.headerCardText1}>{poData && poData.id}</Text>
-                <Text style={styles.headerCardText2}>{poData && formatDate(poData.created_at)}</Text>
-              </View>
-              <View style={styles.headerCard}>
-                <Text style={styles.headerCardText3}>{`Status: ${statusData[poData && poData.status]}`}</Text>
-              </View>
-            </View>
-            <FlatList
-              data={detailPoData}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={({ item }) => (
-                <View style={styles.card}>
-                  <Text style={styles.cardText1}>{`${item.kode} / ${item.nama_produk}`}</Text>
-                  <Text style={styles.cardText2}>{`Jumlah: ${item.qty}`}</Text>
+            {noDataForAnyCategory ? (
+              <View><Text style={styles.cardEmpty}>"TIDAK ADA DATA"</Text></View>
+            ) : (
+              <>
+                <View style={styles.header}>
+                  <View style={styles.headerCard}>
+                    <Text style={styles.headerCardText1}>{poData && poData.id}</Text>
+                    <Text style={styles.headerCardText2}>{poData && formatDate(poData.created_at)}</Text>
+                  </View>
+                  <View style={styles.headerCard}>
+                    <Text style={styles.headerCardText3}>{`Status: ${statusData[poData && poData.status]}`}</Text>
+                  </View>
                 </View>
-              )}
-            />
-            <View style={styles.footer}>
-              <Text style={styles.labelText}>Total Artikel:</Text>
-              <Text style={styles.labelText}>{totalItems}</Text>
-            </View>
+                <FlatList
+                  data={detailPoData}
+                  keyExtractor={(item) => item.toString()}
+                  renderItem={({ item }) => (
+                    <View style={styles.card}>
+                      <Text style={styles.cardText1}>{`${item.kode}`}</Text>
+                      <Text style={styles.cardText2}>{`${item.nama_produk}`}</Text>
+                      <Text style={styles.cardText3}>{`Jumlah: ${item.qty}`}</Text>
+                    </View>
+                  )}
+                />
+                <View style={styles.footer}>
+                  <Text style={styles.labelText}>Total Artikel:</Text>
+                  <Text style={styles.labelText}>{totalItems}</Text>
+                </View>
+              </>
+            )}
           </>
         )}
       </View>
     </View>
   );
-};  
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -97,6 +110,12 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     marginBottom: -20,
     backgroundColor: 'white',
+  },
+  cardEmpty: {
+    padding: 15,
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   header: {
     padding: 10,
@@ -141,6 +160,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   cardText2: {
+    fontSize: 16,
+  },
+  cardText3: {
     fontSize: 16,
     marginBottom: -5,
   },
