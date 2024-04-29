@@ -1,4 +1,4 @@
-import { apiUrl } from '../../globals.js';
+import {apiUrl} from '../../globals.js';
 import {useState, useEffect} from 'react';
 import {MaterialCommunityIcons} from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -146,7 +146,7 @@ const AbsiPOArtikel = ({route, navigation}) => {
   return (
     <View style={styles.container}>
       <View style={styles.form}>
-        <TextInput value={searchText} style={styles.textInput} selectionColor="black" autoCapitalize="none" placeholder="Cari ID Permintaan Artikel ..." onChangeText={(text) => setSearchText(text)}/>
+      <TextInput value={searchText} autoCapitalize="none" selectionColor="black" style={styles.textInput} placeholder="Cari ID Permintaan Artikel ..." onChangeText={(text) => setSearchText(text.toUpperCase())}/>
         <View style={styles.buttonMenu}>
           <TouchableOpacity onPress={() => handleButtonClick('Proses')} style={[styles.buttonOff, activeButton === 'Proses' && styles.buttonOn]}>
             <Text style={[styles.buttonOfftext, activeButton === 'Proses' && styles.buttonOntext]}>PROSES</Text>
@@ -161,7 +161,7 @@ const AbsiPOArtikel = ({route, navigation}) => {
         {renderFilteredData()}
       </View>
       <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('BuatPo')}>
-        <MaterialCommunityIcons size={25} name="plus" color="white"/>
+        <MaterialCommunityIcons size="large" name="plus" color="white"/>
         <Text style={styles.buttonText}>BUAT PO</Text>
       </TouchableOpacity>
     </View>
