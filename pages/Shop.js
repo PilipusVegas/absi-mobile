@@ -1,4 +1,5 @@
 import {useState, useEffect} from 'react';
+import {apiUrl, imageUrl} from '../globals.js';
 import {MaterialCommunityIcons} from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {View, Text, Image, FlatList, ScrollView, StyleSheet, TouchableOpacity} from 'react-native';
@@ -8,7 +9,10 @@ const AbsiShop = ({navigation}) => {
   const [userId, setUserId] = useState(null);
   const [username, setUsername] = useState('');
   const [storeData, setStoreData] = useState([]);
-  const handleStorePress = (store) => {navigation.navigate('Menu', {selectedStore: store})};
+
+  const handleStorePress = (store) => {
+    navigation.navigate('Menu', {selectedStore: store})
+  };
 
   const formatAddress = (address) => {
     const formattedAddress = address.trim().toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
@@ -17,13 +21,10 @@ const AbsiShop = ({navigation}) => {
 
   const saveStoreDataToStorage = async (stores) => {
     try {
-      const storeDataToSave = stores.map((store) => ({
-        id_toko: store.id_toko,
-        nama_toko: store.nama_toko,
-      }));
+      const storeDataToSave = stores.map((store) => ({id_toko: store.id_toko, nama_toko: store.nama_toko}));
       await AsyncStorage.setItem('storeData', JSON.stringify(storeDataToSave));
     } catch (error) {
-      //
+      console.error('Error fetching data:', error);
     }
   };
 
@@ -35,7 +36,7 @@ const AbsiShop = ({navigation}) => {
         setUserId(storedUserId);
         setUsername(storedUsername);
       } catch (error) {
-        //
+        console.error('Error fetching data:', error);
       }
     };
     getDataFromStorage();
@@ -47,33 +48,34 @@ const AbsiShop = ({navigation}) => {
         if (userId) {
           const formData = new FormData();
           formData.append('id_user', userId);
-          const apiUrl = 'https://globalindo-group.com/absi_demo/api/getToko';
-          const response = await fetch(apiUrl, { method: 'POST', body: formData });
+          const response = await fetch(apiUrl + '/getToko', {method: 'POST', body: formData});
           const result = await response.json();
-          console.log(`success: ${result.success}, message: ${result.message}`);
-          console.log(result.stores);
           if (result.success) {setStoreData(result.stores); saveStoreDataToStorage(result.stores)}
         }
       } catch (error) {
-        //
+        console.error('Error fetching data:', error);
       }
     };
     fetchData();
   }, [userId]);
 
-  const renderStoreCard = ({item}) => (
-    <TouchableOpacity onPress={() => handleStorePress(item)} style={styles.containerStore}>
-      <View style={styles.store}>
-        <Image style={styles.storeImage} source={require('../images/PlusIcon.png')}/>
-        <View style={styles.storeCard}>
-          <Text style={styles.storeText1}>{item.nama_toko.toUpperCase()}</Text>
-          <Text style={styles.storeText2}>{formatAddress(item.alamat)}</Text>
-          <Text style={styles.storeText2}>{item.telp}</Text>
+  const renderStoreCard = ({ item }) => {
+    const image1 = (imageUrl + `/toko/${item.foto_toko}`);
+    const image2 = item.foto_toko ? image1 : (imageUrl + `/toko/hicoop.png`);
+    return (
+      <TouchableOpacity onPress={() => handleStorePress(item)} style={styles.containerStore}>
+        <View style={styles.store}>
+          <Image style={styles.storeImage} source={{ uri: image2 }}/>
+          <View style={styles.storeCard}>
+            <Text style={styles.storeText1}>{item.nama_toko.toUpperCase()}</Text>
+            <Text style={styles.storeText2}>{formatAddress(item.alamat)}</Text>
+            <Text style={styles.storeText2}>{item.telp}</Text>
+          </View>
+          <MaterialCommunityIcons size={25} name="arrow-right-thick"/>
         </View>
-        <MaterialCommunityIcons size={22} name="arrow-right-thick"/>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
