@@ -1,9 +1,9 @@
-import { apiUrl } from '../../globals.js';
-import { useState, useEffect } from 'react';
+import {useState, useEffect} from 'react';
 import * as ImagePicker from 'expo-image-picker';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import {apiUrl, imageUrl} from '../../globals.js';
+import {MaterialCommunityIcons} from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { View, Text, Alert, TextInput, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import {View, Text, Image, Alert, TextInput, StyleSheet, ScrollView, TouchableOpacity} from 'react-native';
 
 const AbsiUpdateAset = ({ navigation }) => {
   const [cardData, setCardData] = useState([]);
@@ -48,7 +48,7 @@ const AbsiUpdateAset = ({ navigation }) => {
         checkButtonStatus(responseData.aset);
       }
     } catch (error) {
-      //
+      console.error('Error fetching data:', error);
     }
   };
 
@@ -90,7 +90,7 @@ const AbsiUpdateAset = ({ navigation }) => {
         checkButtonStatus(updatedCardData);
       }
     } catch (error) {
-      //
+      console.error('Error fetching data:', error);
     }
   };
 
@@ -108,7 +108,7 @@ const AbsiUpdateAset = ({ navigation }) => {
               <View key={index} style={styles.cardRow}>
                 <TouchableOpacity style={[styles.cardLeft, { flex: 0.5 }]} onPress={() => openImagePicker(index)}>
                   {card.foto_aset ? (
-                    <Image source={{ uri: card.foto_aset }} style={styles.imageStyle}/>
+                    <Image source={{ uri: `${imageUrl}/aset/toko/${card.foto_aset}` }} style={styles.imageStyle}/>
                   ) : (
                     <MaterialCommunityIcons name="camera" size={24} color="black"/>
                   )}
