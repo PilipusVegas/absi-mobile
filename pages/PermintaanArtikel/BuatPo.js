@@ -66,7 +66,7 @@ const AbsiBuatPO = ({ navigation }) => {
       <View style={styles.form}>
         <TextInput value={searchQuery} selectionColor="black" style={styles.textInput} onChangeText={handleSearch} autoCapitalize="characters" placeholder="Cari ID Artikel ..."/>
         {isLoading ? (
-          <ActivityIndicator size="large" color="#071952"/>
+          <ActivityIndicator size={24} color="#071952"/>
         ) : (
           <FlatList
             style={styles.flatList}
@@ -87,7 +87,7 @@ const AbsiBuatPO = ({ navigation }) => {
         )}
         <TouchableOpacity onPress={handleNavigate} disabled={selectedCount === 0} style={[styles.buttonOn, selectedCount === 0 && styles.buttonOff]}>
           <Text style={styles.buttonText}>{selectedCount ? `${selectedCount} ARTIKEL TERPILIH` : '0 ARTIKEL TERPILIH'}</Text>
-          <MaterialCommunityIcons size={25} color="white" name="arrow-right-bold"/>
+          <MaterialCommunityIcons size={24} color="white" name="arrow-right-bold"/>
         </TouchableOpacity>
       </View>
     </View>
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F7F7F7',
   },
   flatList: {
-    marginBottom: 70,
+    marginBottom: 75,
   },
   card: {
     padding: 10,
