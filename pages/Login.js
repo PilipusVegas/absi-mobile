@@ -1,9 +1,9 @@
-import moment from 'moment';
+import {apiUrl} from '../globals.js';
 import {useState, useEffect} from 'react';
 import {MaterialCommunityIcons} from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {View, Text, Image, Alert, Modal, Linking, Keyboard, TextInput, ScrollView, StyleSheet, ImageBackground, TouchableOpacity, TouchableWithoutFeedback} from 'react-native';
+import {View, Text, Image, Alert, Modal, Linking, Keyboard, TextInput, ScrollView, StyleSheet, TouchableOpacity, TouchableWithoutFeedback} from 'react-native';
 
 const AbsiLogin = ({onLoginSuccess, enableFingerprint}) => {
   const companyOptions = ['VISTA'];
@@ -11,7 +11,6 @@ const AbsiLogin = ({onLoginSuccess, enableFingerprint}) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loggedIn, setLoggedIn] = useState(false);
-  const [isRamadan, setIsRamadan] = useState(false);
   const [modalTelepon, setModalTelepon] = useState('');
   const [saveAccount, setSaveAccount] = useState(false);
   const [modalUsername, setModalUsername] = useState('');
@@ -21,6 +20,7 @@ const AbsiLogin = ({onLoginSuccess, enableFingerprint}) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isModalButtonDisabled, setIsModalButtonDisabled] = useState(true);
   const [isPasswordRecoveryVisible, setIsPasswordRecoveryVisible] = useState(false);
+  
   const togglePasswordVisibility = () => {setIsPasswordVisible(!isPasswordVisible)};
   const togglePasswordRecovery = () => {setIsPasswordRecoveryVisible(!isPasswordRecoveryVisible)};
   const handleUsernameChange = (text) => {setUsername(text); checkButtonState(text, company, password)};
@@ -33,18 +33,18 @@ const AbsiLogin = ({onLoginSuccess, enableFingerprint}) => {
     try {
       const hasFingerprintSupport = await LocalAuthentication.hasHardwareAsync();
       if (hasFingerprintSupport) {
-        const result = await LocalAuthentication.authenticateAsync({promptMessage: 'Biometrik Sidik Jari'});
+        const result = await LocalAuthentication.authenticateAsync({promptMessage: 'Login menggunakan biometrik'});
         if (result.success) {
           onLoginSuccess();
           setLoggedIn(true);
         } else {
-          Alert.alert('LOGIN GAGAL', 'terjadi kesalahan, coba kembali.');
+          Alert.alert('LOGIN GAGAL !', 'Terjadi kesalahan, silakan coba kembali.');
         }
       } else {
-        Alert.alert('LOGIN GAGAL', 'sidik jari tidak tersedia pada perangkat anda.');
+        Alert.alert('LOGIN GAGAL !', 'Terjadi kesalahan, biometrik tidak tersedia.');
       }
     } catch (error) {
-        Alert.alert('LOGIN GAGAL', 'Terjadi kesalahan, gunakan cara lain.');
+        Alert.alert('LOGIN GAGAL !', 'Terjadi kesalahan, gunakan cara yang lain.');
       }
   };
 
@@ -53,7 +53,7 @@ const AbsiLogin = ({onLoginSuccess, enableFingerprint}) => {
       const formData = new FormData();
       formData.append("username", username);
       formData.append("password", password);
-      const response = await fetch('https://globalindo-group.com/absi_demo/api/login', {method: 'POST', body: formData});
+      const response = await fetch(apiUrl + '/login', {method: 'POST', body: formData});
       if (response.ok) {
         const responseData = await response.json();
         if (responseData.success) {
@@ -68,7 +68,7 @@ const AbsiLogin = ({onLoginSuccess, enableFingerprint}) => {
         }
       }
     } catch (error) {
-      //
+      console.error('Error fetching data:', error);
     }
   };
 
@@ -77,99 +77,82 @@ const AbsiLogin = ({onLoginSuccess, enableFingerprint}) => {
   }, [enableFingerprint]);
 
   useEffect(() => {
-    const currentDate = moment();
-    const ramadanStart = moment().year(currentDate.year()).month(2).date(11);
-    const ramadanEnd = moment().year(currentDate.year()).month(3).date(10);
-    const isCurrentDateInRamadan = currentDate.isBetween(ramadanStart, ramadanEnd, 'day', '[]');
-    setIsRamadan(isCurrentDateInRamadan);
-  }, []);
-
-  useEffect(() => {
     const checkLoginStatus = async () => {
       try {
         const isLoggedIn = await AsyncStorage.getItem('isLoggedIn');
         if (isLoggedIn === 'true') {setValidCredentials(true)}
       } catch (error) {
-        //
+        console.error('Error fetching data:', error);
       }
     };
     checkLoginStatus();
   }, []);
 
   return (
-    <ImageBackground style={styles.container} source={isRamadan ? require('../images/ramadan.jpg') : null}>
+    <View style={styles.container}>
       <Image style={styles.image} source={require('../images/AbsiLogo.png')}/>
-
       <View style={styles.form}>
         <Text style={styles.label}>LOGIN</Text>
         <ScrollView>
           <TouchableOpacity style={styles.containerInput} onPress={() => setShowDropdown(!showDropdown)}>
-            <Text style={styles.input1}>{company || 'Select Company'}</Text>
+            <Text style={styles.textInputA}>{company || 'Select Company'}</Text>
           </TouchableOpacity>
           {showDropdown && (
             <View style={styles.dropdown}>
               {companyOptions.map((option) => (
-                <TouchableOpacity key={option} style={styles.dropdownButton} onPress={() => selectCompany(option)}>
+                <TouchableOpacity key={option} onPress={() => selectCompany(option)}>
                   <Text>{option}</Text>
                 </TouchableOpacity>
               ))}
             </View>
           )}
-
           <View style={styles.containerInput}>
-            <MaterialCommunityIcons size={20} color="grey" name="account" style={styles.iconLeft}/>
-            <TextInput value={username} style={styles.input2} autoCapitalize="none" placeholder="Username" selectionColor="black" onChangeText={handleUsernameChange} accessibilityLabel="Username Input"/>
+            <MaterialCommunityIcons size={22} color="grey" name="account" style={styles.iconA}/>
+            <TextInput value={username} style={styles.textInputB} autoCapitalize="none" placeholder="Username" selectionColor="black" onChangeText={handleUsernameChange} accessibilityLabel="Username Input"/>
           </View>
-
           <View style={styles.containerInput}>
-            <MaterialCommunityIcons size={20} name="lock" color="grey" style={styles.iconLeft}/>
-            <TextInput value={password} style={styles.input2} autoCapitalize="none" placeholder="Password" selectionColor="black" onChangeText={handlePasswordChange} accessibilityLabel="Password Input" secureTextEntry={!isPasswordVisible}/>          
-            <TouchableOpacity style={styles.iconRight} onPress={togglePasswordVisibility}>
-              <MaterialCommunityIcons size={20} color="grey" name={isPasswordVisible ? 'eye-off' : 'eye'}/>
+            <MaterialCommunityIcons size={22} name="lock" color="grey" style={styles.iconA}/>
+            <TextInput value={password} style={styles.textInputB} autoCapitalize="none" placeholder="Password" selectionColor="black" onChangeText={handlePasswordChange} accessibilityLabel="Password Input" secureTextEntry={!isPasswordVisible}/>          
+            <TouchableOpacity style={styles.iconB} onPress={togglePasswordVisibility}>
+              <MaterialCommunityIcons size={22} color="grey" name={isPasswordVisible ? 'eye-off' : 'eye'}/>
             </TouchableOpacity>
           </View>
-          
-          <Text style={styles.buttonForgotPassword} onPress={togglePasswordRecovery}>Lupa password ?</Text>
+          <Text style={styles.forgotPassword} onPress={togglePasswordRecovery}>Lupa password ?</Text>
           <Modal transparent={true} animationType="slide" visible={isPasswordRecoveryVisible} onRequestClose={togglePasswordRecovery}>
             <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
               <View style={styles.containerModal}>
                 <View style={styles.modal}>
-                  <Text style={styles.modalText}>Untuk mendapatkan "Password", silakan isi "Username" & "Nomor Telepon" yang sudah terdaftar.</Text>
+                  <Text style={styles.modalText}>Untuk mendapatkan password, silakan isi username" dan nomor telepon yang sudah terdaftar.</Text>
                   <TextInput autoCapitalize="none" placeholder="Username" selectionColor="black" style={styles.modalInput} onChangeText={(text) => {setModalUsername(text); checkModalButtonState(text, modalTelepon)}}/>
                   <TextInput placeholder="Telepon" keyboardType="numeric" selectionColor="black" style={styles.modalInput} onChangeText={(text) => {setModalTelepon(text); checkModalButtonState(modalUsername, text)}}/>
-                  <TouchableOpacity onPress={togglePasswordRecovery} disabled={isModalButtonDisabled} style={[styles.modalButton1, {backgroundColor: isModalButtonDisabled ? 'grey' : '#071952'}]}>
+                  <TouchableOpacity onPress={togglePasswordRecovery} disabled={isModalButtonDisabled} style={[styles.modalButtonA, {backgroundColor: isModalButtonDisabled ? 'grey' : '#071952'}]}>
                     <Text style={styles.buttonText}>KIRIM</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.modalButton2}>
+                  <TouchableOpacity style={styles.modalButtonB} onPress={togglePasswordRecovery}>
                     <Text style={styles.buttonText}>KEMBALI</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             </TouchableWithoutFeedback>
           </Modal>
-
           <View style={styles.containerButton}>
-            <TouchableOpacity onPress={handleLogin} disabled={isButtonDisabled} style={[styles.buttonLogin1, { backgroundColor: isButtonDisabled ? 'grey' : '#071952' }]}>
+            <TouchableOpacity onPress={handleLogin} disabled={isButtonDisabled} style={[styles.buttonLoginA, { backgroundColor: isButtonDisabled ? 'grey' : '#071952' }]}>
               <Text style={styles.buttonText}>LOGIN</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity disabled={!validCredentials} onPress={handleFingerprintLogin} style={[styles.buttonLogin2, { backgroundColor: validCredentials ? '#071952' : 'grey' }]}>
+            <TouchableOpacity disabled={!validCredentials} onPress={handleFingerprintLogin} style={[styles.buttonLoginB, { backgroundColor: validCredentials ? '#071952' : 'grey' }]}>
               <MaterialCommunityIcons size={22} color="white" name="fingerprint"/>
             </TouchableOpacity>
           </View>
-
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <View style={{flex: 1, height: 2, marginTop: 10, marginBottom: 15, fontWeight: 'bold', backgroundColor: 'grey'}}/>
           </View>
-
           <TouchableOpacity style={styles.buttonHelp} onPress={() => Linking.openURL('https://api.whatsapp.com/send?phone=6281398470053')}>
             <Text style={styles.buttonText}>BANTUAN</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
-
-      <Text style={{fontSize: 14, color: 'black', fontWeight: 'bold', alignSelf: 'center'}}>ABSI version 2.2.1 || copyright © 2023 GLOBALINDO GROUP</Text>
-    </ImageBackground>
+      <Text style={{fontSize: 14, color: 'white', fontWeight: 'bold', alignSelf: 'center'}}>ABSI version 2.2.1 || copyright © 2023 GLOBALINDO GROUP</Text>
+    </View>
   );
 };
 
@@ -179,7 +162,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#071952',
   },
   image: {
-    width: 300,
+    width: 305,
     height: 95,
     marginTop: 100,
     marginBottom: 20,
@@ -209,14 +192,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#F7F7F7',
   },
-  input1: {
+  textInputA: {
     padding: 15,
     fontSize: 16,
     width: '100%',
     color: 'grey',
   },
   dropdown: {
-    zIndex: 1,
+    padding: 15,
     width: '100%',
     borderWidth: 2,
     borderRadius: 10,
@@ -224,29 +207,23 @@ const styles = StyleSheet.create({
     borderColor: 'grey',
     backgroundColor: '#F7F7F7',
   },
-  dropdownButton: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: 'grey',
-  },
-  iconLeft: {
+  iconA: {
+    top: 12,
     left: 10,
-    top: '50%',
     position: 'absolute',
-    transform: [{ translateY: -12 }],
   },
-  input2: {
+  textInputB: {
     padding: 10,
     fontSize: 16,
     width: '100%',
     marginLeft: 25,
   },
-  iconRight: {
-    top: 15,
+  iconB: {
+    top: 12,
     right: 10,
     position: 'absolute',
   },
-  buttonForgotPassword: {
+  forgotPassword: {
     fontSize: 16,
     color: 'grey',
     marginRight: 10,
@@ -255,16 +232,14 @@ const styles = StyleSheet.create({
   },
   containerModal: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modal: {
     padding: 20,
     width: '100%',
-    marginTop: 90,
+    marginTop: 265,
     borderWidth: 2,
-    borderRadius: 10,
+    borderRadius: 25,
     borderColor: 'grey',
     backgroundColor: 'white',
   },
@@ -279,12 +254,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderColor: 'grey',
   },
-  modalButton1: {
+  modalButtonA: {
     padding: 10,
     width: '100%',
+    borderWidth: 2,
     borderRadius: 10,
     marginBottom: 10,
     alignSelf: 'center',
+    borderColor: 'grey',
     alignItems: 'center',
     flexDirection: 'row',
     backgroundColor: '#071952',
@@ -296,20 +273,23 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
-  modalButton2: {
+  modalButtonB: {
     padding: 10,
     width: '100%',
+    borderWidth: 2,
     borderRadius: 10,
     alignSelf: 'center',
+    borderColor: 'grey',
     alignItems: 'center',
     flexDirection: 'row',
+    justifyContent: 'center',
     backgroundColor: 'red',
   },
   containerButton: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  buttonLogin1: {
+  buttonLoginA: {
     padding: 10,
     width: '75%',
     borderWidth: 2,
@@ -320,7 +300,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#071952',
   },
-  buttonLogin2: {
+  buttonLoginB: {
     padding: 10,
     width: '20%',
     borderWidth: 2,
