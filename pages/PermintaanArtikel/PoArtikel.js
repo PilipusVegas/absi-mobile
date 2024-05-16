@@ -1,4 +1,4 @@
-import {apiUrl} from '../../globals.js';
+import {apiUrl } from '../../globals.js';
 import {useState, useEffect} from 'react';
 import {MaterialCommunityIcons} from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -14,7 +14,7 @@ const statusData = {
   6: 'Permintaan artikel ditolak',
 };
 
-const AbsiPOArtikel = ({route, navigation}) => {
+const AbsiPOArtikel = ({ route, navigation }) => {
   const [idToko, setIdToko] = useState(null);
   const [dataToShow, setDataToShow] = useState([]);
   const [searchText, setSearchText] = useState('');
@@ -22,7 +22,7 @@ const AbsiPOArtikel = ({route, navigation}) => {
   const [activeButton, setActiveButton] = useState('Proses');
 
   const handleButtonClick = (buttonName) => {
-    setActiveButton(buttonName)
+    setActiveButton(buttonName);
   };
 
   const formatDate = (dateString) => {
@@ -36,9 +36,7 @@ const AbsiPOArtikel = ({route, navigation}) => {
   const handleCardClick = async (data) => {
     try {
       await AsyncStorage.setItem('selected_id_po', data.id);
-      navigation.navigate('DetailPo', { 
-        pm: data.pm,
-      });
+      navigation.navigate('DetailPo', { pm: data.pm });
     } catch (error) {
       console.error('Error fetching data:', error);
     }
@@ -53,7 +51,7 @@ const AbsiPOArtikel = ({route, navigation}) => {
       const data = await response.json();
       setTimeout(() => {setIsLoading(false)}, 200);
       if (data.success) {
-        const idPoArray = data.permintaan.map(item => item.id);
+        const idPoArray = data.permintaan.map((item) => item.id);
         await AsyncStorage.setItem('id_po', JSON.stringify(idPoArray));
         setDataToShow(data.permintaan);
       }
@@ -62,26 +60,26 @@ const AbsiPOArtikel = ({route, navigation}) => {
       setIsLoading(false);
     }
   };
-  
+
   const renderFilteredData = () => {
     if (isLoading) {
-      return <ActivityIndicator size="large" color="#071952"/>;
+      return <ActivityIndicator size={24} color="#071952"/>;
     }
     if (dataToShow.length === 0) {
       return <Text style={styles.cardEmpty}>"TIDAK ADA DATA"</Text>;
     }
     let filteredData = dataToShow;
     if (searchText.trim() !== '') {
-      filteredData = filteredData.filter(item => item.id.toString().toLowerCase().includes(searchText.toLowerCase().trim()));
+      filteredData = filteredData.filter((item) => item.id .toString() .toLowerCase() .includes(searchText.toLowerCase().trim()));
     }
     if (activeButton === 'Proses') {
-      filteredData = filteredData.filter(data => [0, 1, 2, 3, 4].includes(parseInt(data.status)));
+      filteredData = filteredData.filter((data) => [0, 1, 2, 3, 4].includes(parseInt(data.status)));
     } else if (activeButton === 'Selesai') {
-      filteredData = filteredData.filter(data => parseInt(data.status) === 5);
+      filteredData = filteredData.filter((data) => parseInt(data.status) === 5);
     } else if (activeButton === 'Tolak') {
-      filteredData = filteredData.filter(data => parseInt(data.status) === 6);
+      filteredData = filteredData.filter((data) => parseInt(data.status) === 6);
     }
-    const noDataForAnyCategory = filteredData.every(item => {
+    const noDataForAnyCategory = filteredData.every((item) => {
       if (activeButton === 'Proses') {
         return ![0, 1, 2, 3, 4].includes(parseInt(item.status));
       } else if (activeButton === 'Selesai') {
@@ -95,16 +93,16 @@ const AbsiPOArtikel = ({route, navigation}) => {
       return <Text style={styles.cardEmpty}>"TIDAK ADA DATA"</Text>;
     }
     return renderData(filteredData);
-  };  
+  };
 
   useEffect(() => {
     setActiveButton('Proses');
-  }, [route.params]); 
+  }, [route.params]);
 
   useEffect(() => {
     const fetchDataBasedOnParams = async () => {
       if (route.params && route.params.selectedStore) {
-        const {selectedStore} = route.params;
+        const { selectedStore } = route.params;
         setIdToko(selectedStore.id_toko);
         await fetchData(selectedStore.id_toko);
       } else {
@@ -120,7 +118,7 @@ const AbsiPOArtikel = ({route, navigation}) => {
       }
     };
     fetchDataBasedOnParams();
-  }, [route.params]); 
+  }, [route.params]);
 
   const renderData = (data) => {
     return (
@@ -128,12 +126,12 @@ const AbsiPOArtikel = ({route, navigation}) => {
         data={data}
         style={styles.flatList}
         renderItem={({ item }) => (
-          <TouchableOpacity key={item.id} onPress={() => handleCardClick(item)} style={[styles.cardButton, item.status === '0' && { borderColor: '#071952' }, item.status === '6' && { borderColor: 'red' }]}>
-            <View style={styles.card}>
+          <TouchableOpacity key={item.id} onPress={() => handleCardClick(item)} style={[styles.card, item.status === '0' && { borderColor: '#071952' }, item.status === '6' && { borderColor: 'red' }]}>
+            <View style={styles.cardButton}>
               <Text style={styles.cardText1}>{`${item.id}`}</Text>
               <Text style={styles.cardText2}>{`${formatDate(item.created_at)}`}</Text>
             </View>
-            <View style={styles.card}>
+            <View style={styles.cardButton}>
               <Text style={styles.cardText3}>{`Status: ${statusData[item.status]}`}</Text>
             </View>
           </TouchableOpacity>
@@ -146,7 +144,7 @@ const AbsiPOArtikel = ({route, navigation}) => {
   return (
     <View style={styles.container}>
       <View style={styles.form}>
-      <TextInput value={searchText} autoCapitalize="none" selectionColor="black" style={styles.textInput} placeholder="Cari ID Permintaan Artikel ..." onChangeText={(text) => setSearchText(text.toUpperCase())}/>
+        <TextInput value={searchText} autoCapitalize="none" selectionColor="black" style={styles.textInput} placeholder="Cari ID Permintaan Artikel ..." onChangeText={(text) => setSearchText(text.toUpperCase())}/>
         <View style={styles.buttonMenu}>
           <TouchableOpacity onPress={() => handleButtonClick('Proses')} style={[styles.buttonOff, activeButton === 'Proses' && styles.buttonOn]}>
             <Text style={[styles.buttonOfftext, activeButton === 'Proses' && styles.buttonOntext]}>PROSES</Text>
@@ -161,7 +159,7 @@ const AbsiPOArtikel = ({route, navigation}) => {
         {renderFilteredData()}
       </View>
       <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('BuatPo')}>
-        <MaterialCommunityIcons size="large" name="plus" color="white"/>
+        <MaterialCommunityIcons size={24} name="plus" color="white"/>
         <Text style={styles.buttonText}>BUAT PO</Text>
       </TouchableOpacity>
     </View>
@@ -224,9 +222,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   flatList: {
-    marginBottom: 70,
+    marginBottom: 75,
   },
-  cardButton: {
+  card: {
     padding: 10,
     borderWidth: 2,
     borderRadius: 10,
@@ -234,7 +232,7 @@ const styles = StyleSheet.create({
     borderColor: '#071952',
     backgroundColor: '#F7F7F7',
   },
-  card: {
+  cardButton: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
