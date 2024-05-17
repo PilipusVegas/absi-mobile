@@ -45,7 +45,7 @@ const AbsiPOArtikel = ({ route, navigation }) => {
     try {
       const formData = new FormData();
       formData.append('id_toko', id_toko);
-      const response = await fetch(apiUrl + '/getPo', {method: 'POST', body: formData});
+      const response = await fetch(`${apiUrl}/getPo`, {method: 'POST', body: formData});
       const data = await response.json();
       if (data.success) {
         const idPoArray = data.permintaan.map((item) => item.id);
