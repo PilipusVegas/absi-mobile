@@ -1,7 +1,7 @@
-import {apiUrl} from '../../globals.js';
-import {useState, useEffect} from 'react';
+import { apiUrl } from '../../globals.js';
+import { useState, useEffect } from 'react';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {View, Text, FlatList, StyleSheet, ActivityIndicator} from 'react-native';
 
 const statusData = {
   0: 'Permintaan artikel belum disetujui TL',
@@ -15,11 +15,7 @@ const statusData = {
 
 const AbsiDetailPO = () => {
   const [poData, setPoData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [detailPoData, setDetailPoData] = useState([]);
-
-  const noDataForAnyCategory = !isLoading && detailPoData.length === 0 && !poData;
-  const totalItems = detailPoData.reduce((total, barang) => total + parseInt(barang.qty), 0);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -30,17 +26,12 @@ const AbsiDetailPO = () => {
   };
 
   useEffect(() => {
-    const timeout = setTimeout(() => {setIsLoading(false)}, 200);
-    return () => clearTimeout(timeout);
-  }, []);
-
-  useEffect(() => {
     const fetchData = async () => {
       try {
         const selectedIdPo = await AsyncStorage.getItem('selected_id_po');
         const formData = new FormData();
         formData.append('id_po', selectedIdPo);
-        const response = await fetch(apiUrl + '/getPoDetail', {method: 'POST', body: formData});
+        const response = await fetch(`${apiUrl}/getPoDetail`, { method: 'POST', body: formData });
         const data = await response.json();
         if (data.success) {
           setPoData(data.po);
@@ -48,8 +39,6 @@ const AbsiDetailPO = () => {
         }
       } catch (error) {
         console.error('Error fetching data:', error);
-      } finally {
-        setTimeout(() => {setIsLoading(false)}, 200);
       }
     };
     fetchData();
@@ -58,42 +47,25 @@ const AbsiDetailPO = () => {
   return (
     <View style={styles.container}>
       <View style={styles.form}>
-        {isLoading ? (
-          <ActivityIndicator size="large" color="#071952"/>
-        ) : (
-          <>
-            {noDataForAnyCategory ? (
-              <View><Text style={styles.cardEmpty}>"TIDAK ADA DATA"</Text></View>
-            ) : (
-              <>
-                <View style={styles.header}>
-                  <View style={styles.headerCard}>
-                    <Text style={styles.headerCardText1}>{poData && poData.id}</Text>
-                    <Text style={styles.headerCardText2}>{poData && formatDate(poData.created_at)}</Text>
-                  </View>
-                  <View style={styles.headerCard}>
-                    <Text style={styles.headerCardText3}>{`Status: ${statusData[poData && poData.status]}`}</Text>
-                  </View>
-                </View>
-                <FlatList
-                  data={detailPoData}
-                  keyExtractor={(item) => item.toString()}
-                  renderItem={({ item }) => (
-                    <View style={styles.card}>
-                      <Text style={styles.cardText1}>{`${item.kode}`}</Text>
-                      <Text style={styles.cardText2}>{`${item.nama_produk}`}</Text>
-                      <Text style={styles.cardText3}>{`Jumlah: ${item.qty}`}</Text>
-                    </View>
-                  )}
-                />
-                <View style={styles.footer}>
-                  <Text style={styles.labelText}>Total Artikel:</Text>
-                  <Text style={styles.labelText}>{totalItems}</Text>
-                </View>
-              </>
-            )}
-          </>
-        )}
+        <View style={styles.header}>
+          <View style={styles.headerCard}>
+            <Text style={styles.headerCardText1}>{poData && poData.id}</Text>
+            <Text style={styles.headerCardText2}>{poData && formatDate(poData.created_at)}</Text>
+          </View>
+          <View style={styles.headerCard}>
+            <Text style={styles.headerCardText3}>{`Status: ${statusData[poData && poData.status]}`}</Text>
+          </View>
+        </View>
+        <FlatList
+          data={detailPoData}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => (
+            <View style={styles.card}>
+              <Text style={styles.cardText1}>{`${item.kode} / ${item.nama_produk}`}</Text>
+              <Text style={styles.cardText2}>{`Jumlah: ${item.qty}`}</Text>
+            </View>
+          )}
+        />
       </View>
     </View>
   );
@@ -110,12 +82,6 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     marginBottom: -20,
     backgroundColor: 'white',
-  },
-  cardEmpty: {
-    padding: 15,
-    fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
   },
   header: {
     padding: 10,
@@ -144,9 +110,6 @@ const styles = StyleSheet.create({
     color: 'white',
     marginBottom: -5,
   },
-  scroll: {
-    marginBottom: 10,
-  },
   card: {
     padding: 10,
     borderWidth: 2,
@@ -161,23 +124,7 @@ const styles = StyleSheet.create({
   },
   cardText2: {
     fontSize: 16,
-  },
-  cardText3: {
-    fontSize: 16,
     marginBottom: -5,
-  },
-  footer: {
-    padding: 10,
-    borderRadius: 10,
-    marginBottom: 10,
-    flexDirection: 'row',
-    backgroundColor: '#071952',
-    justifyContent: 'space-between',
-  },
-  labelText: {
-    fontSize: 16,
-    color: 'white',
-    fontWeight: 'bold',
   },
 });
 export default AbsiDetailPO;
