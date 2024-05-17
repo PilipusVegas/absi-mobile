@@ -1,8 +1,8 @@
-import {apiUrl } from '../../globals.js';
-import {useState, useEffect} from 'react';
-import {MaterialCommunityIcons} from '@expo/vector-icons';
+import { apiUrl } from '../../globals.js';
+import { useState, useEffect } from 'react';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {View, Text, FlatList, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator} from 'react-native';
+import { View, Text, FlatList, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 
 const statusData = {
   0: 'Permintaan artikel belum disetujui TL',
@@ -18,7 +18,6 @@ const AbsiPOArtikel = ({ route, navigation }) => {
   const [idToko, setIdToko] = useState(null);
   const [dataToShow, setDataToShow] = useState([]);
   const [searchText, setSearchText] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [activeButton, setActiveButton] = useState('Proses');
 
   const handleButtonClick = (buttonName) => {
@@ -43,13 +42,11 @@ const AbsiPOArtikel = ({ route, navigation }) => {
   };
 
   const fetchData = async (id_toko) => {
-    setIsLoading(true);
     try {
       const formData = new FormData();
       formData.append('id_toko', id_toko);
       const response = await fetch(apiUrl + '/getPo', {method: 'POST', body: formData});
       const data = await response.json();
-      setTimeout(() => {setIsLoading(false)}, 200);
       if (data.success) {
         const idPoArray = data.permintaan.map((item) => item.id);
         await AsyncStorage.setItem('id_po', JSON.stringify(idPoArray));
@@ -57,17 +54,10 @@ const AbsiPOArtikel = ({ route, navigation }) => {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
-      setIsLoading(false);
     }
   };
 
   const renderFilteredData = () => {
-    if (isLoading) {
-      return <ActivityIndicator size={24} color="#071952"/>;
-    }
-    if (dataToShow.length === 0) {
-      return <Text style={styles.cardEmpty}>"TIDAK ADA DATA"</Text>;
-    }
     let filteredData = dataToShow;
     if (searchText.trim() !== '') {
       filteredData = filteredData.filter((item) => item.id .toString() .toLowerCase() .includes(searchText.toLowerCase().trim()));
@@ -78,19 +68,6 @@ const AbsiPOArtikel = ({ route, navigation }) => {
       filteredData = filteredData.filter((data) => parseInt(data.status) === 5);
     } else if (activeButton === 'Tolak') {
       filteredData = filteredData.filter((data) => parseInt(data.status) === 6);
-    }
-    const noDataForAnyCategory = filteredData.every((item) => {
-      if (activeButton === 'Proses') {
-        return ![0, 1, 2, 3, 4].includes(parseInt(item.status));
-      } else if (activeButton === 'Selesai') {
-        return parseInt(item.status) !== 5;
-      } else if (activeButton === 'Tolak') {
-        return parseInt(item.status) !== 6;
-      }
-      return false;
-    });
-    if (noDataForAnyCategory) {
-      return <Text style={styles.cardEmpty}>"TIDAK ADA DATA"</Text>;
     }
     return renderData(filteredData);
   };
@@ -144,7 +121,7 @@ const AbsiPOArtikel = ({ route, navigation }) => {
   return (
     <View style={styles.container}>
       <View style={styles.form}>
-        <TextInput value={searchText} autoCapitalize="none" selectionColor="black" style={styles.textInput} placeholder="Cari ID Permintaan Artikel ..." onChangeText={(text) => setSearchText(text.toUpperCase())}/>
+        <TextInput value={searchText} selectionColor="black" style={styles.textInput} autoCapitalize="characters" placeholder="Cari ID Permintaan Artikel ..." onChangeText={setSearchText}/>
         <View style={styles.buttonMenu}>
           <TouchableOpacity onPress={() => handleButtonClick('Proses')} style={[styles.buttonOff, activeButton === 'Proses' && styles.buttonOn]}>
             <Text style={[styles.buttonOfftext, activeButton === 'Proses' && styles.buttonOntext]}>PROSES</Text>
@@ -214,12 +191,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'white',
     fontWeight: 'bold',
-  },
-  cardEmpty: {
-    padding: 15,
-    fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
   },
   flatList: {
     marginBottom: 75,
