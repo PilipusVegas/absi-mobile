@@ -1,8 +1,8 @@
 import { apiUrl } from '../../globals.js';
-import {useState, useEffect} from 'react';
-import {MaterialCommunityIcons} from '@expo/vector-icons';
+import { useState, useEffect } from 'react';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity} from 'react-native';
+import { View, Text, TextInput, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 
 const statusDescriptions = {
   0: 'Menunggu di approve Leader',
@@ -15,7 +15,7 @@ const statusDescriptions = {
 };
 
 const AbsiReturArtikel = ({route, navigation}) => {
-  const [storeId, setStoreId] = useState(null);
+  const [idToko, setIdToko] = useState(null);
   const [dataToShow, setDataToShow] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [activeButton, setActiveButton] = useState('Proses');
@@ -36,13 +36,13 @@ const AbsiReturArtikel = ({route, navigation}) => {
     try {
       const formData = new FormData();
       formData.append('id_toko', id_toko);
-      const response = await fetch(apiUrl + '/getRetur', { method: 'POST', body: formData });
+      const response = await fetch(`${apiUrl}/getRetur`, { method: 'POST', body: formData });
       const data = await response.json();
       if (data.success) {
         setDataToShow(data.retur);
       }
     } catch (error) {
-      //
+      console.error('Error fetching data:', error);
     }
   };
 
@@ -59,7 +59,7 @@ const AbsiReturArtikel = ({route, navigation}) => {
         tanggal: data.created_at,
       });
     } catch (error) {
-      //
+      console.error('Error fetching data:', error);
     }
   };
 
@@ -70,52 +70,30 @@ const AbsiReturArtikel = ({route, navigation}) => {
     }
     if (activeButton === 'Proses') {
       filteredData = filteredData.filter(data => [0, 1, 2, 3, 4].includes(parseInt(data.status)));
-      if (filteredData.length === 0) {
-        return <Text style={styles.cardEmpty}>TIDAK ADA DATA</Text>;
-      }
     } else if (activeButton === 'Selesai') {
       filteredData = filteredData.filter(data => parseInt(data.status) === 5);
-      if (filteredData.length === 0) {
-        return <Text style={styles.cardEmpty}>TIDAK ADA DATA</Text>;
-      }
     } else if (activeButton === 'Tolak') {
       filteredData = filteredData.filter(data => parseInt(data.status) === 6);
-      if (filteredData.length === 0) {
-        return <Text style={styles.cardEmpty}>TIDAK ADA DATA</Text>;
-      }
     }
-    return renderData(filteredData);
+    return filteredData;
   };
 
   useEffect(() => {
     const fetchDataBasedOnParams = async () => {
-      let selectedStoreId = null;
+      let selectedIdToko = null;
       if (route.params && route.params.selectedStore) {
-        selectedStoreId = route.params.selectedStore.id_toko;
+        selectedIdToko = route.params.selectedStore.id_toko;
       } else {
-        selectedStoreId = await AsyncStorage.getItem('id_toko');
+        selectedIdToko = await AsyncStorage.getItem('id_toko');
       }
-      if (selectedStoreId) {
-        setStoreId(selectedStoreId);
-        fetchData(selectedStoreId);
+      if (selectedIdToko) {
+        setIdToko(selectedIdToko);
+        fetchData(selectedIdToko);
       }
     };
     fetchDataBasedOnParams();
   }, [route.params]);
-
-  const renderData = (data) => {
-    return (
-      <ScrollView style={styles.scrollView}>
-        {data.map((item, index) => (
-          <TouchableOpacity key={index} onPress={() => handleCardClick(item)} style={[styles.card, item.status === '5' && { borderColor: 'green' }, item.status === '6' && { borderColor: 'red' }]}>
-            <Text style={styles.cardText1}>{`${item.id}`}</Text>
-            <Text style={styles.cardText2}>{`Tanggal: ${formatDate(item.created_at)}`}</Text>
-            <Text style={styles.cardText3}>{`Status: ${statusDescriptions[item.status]}`}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    );
-  };
+  const filteredData = renderFilteredData();
 
   return (
     <View style={styles.container}>
@@ -132,10 +110,25 @@ const AbsiReturArtikel = ({route, navigation}) => {
             <Text style={[styles.buttonOffText, activeButton === 'Tolak' && styles.buttonOnText]}>TOLAK</Text>
           </TouchableOpacity>
         </View>
-        {renderFilteredData()}
+        <FlatList 
+          data={filteredData}
+          style={styles.flatList}
+          keyExtractor={item => item.id.toString()}
+          renderItem={({ item }) => (
+            <TouchableOpacity onPress={() => handleCardClick(item)} style={[styles.card, item.status === '5' && { borderColor: 'green' }, item.status === '6' && { borderColor: 'red' }]}>
+              <View style={styles.cardButton}>
+                <Text style={styles.cardText1}>{`${item.id}`}</Text>
+                <Text style={styles.cardText2}>{`${formatDate(item.created_at)}`}</Text>
+              </View>
+              <View style={styles.cardButton}>
+                <Text style={styles.cardText3}>{`Status: ${statusDescriptions[item.status]}`}</Text>
+              </View>
+            </TouchableOpacity>
+          )}
+        />
       </View>
       <TouchableOpacity style={styles.buttonNext} onPress={() => navigation.navigate('BuatRetur')}>
-        <MaterialCommunityIcons size={20} name="plus" color="white" />
+        <MaterialCommunityIcons size={24} name="plus" color="white"/>
         <Text style={styles.buttonNextText}>BUAT RETUR</Text>
       </TouchableOpacity>
     </View>
@@ -191,8 +184,8 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
   },
-  scrollView: {
-    marginBottom: 70,
+  flatList: {
+    marginBottom: 75,
   },
   card: {
     padding: 10,
@@ -202,6 +195,10 @@ const styles = StyleSheet.create({
     borderColor: '#071952',
     backgroundColor: 'white',
   },
+  cardButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
   cardText1: {
     fontSize: 16,
     marginTop: -5,
@@ -209,6 +206,7 @@ const styles = StyleSheet.create({
   },
   cardText2: {
     fontSize: 16,
+    marginTop: -5,
   },
   cardText3: {
     fontSize: 16,
@@ -231,15 +229,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
     textAlign: 'center',
-  },
-  cardEmpty: {
-    padding: 32,
-    fontSize: 16,
-    borderWidth: 2,
-    borderRadius: 10,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    borderColor: '#071952',
   },
 });
 export default AbsiReturArtikel;
