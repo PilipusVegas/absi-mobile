@@ -1,74 +1,61 @@
+import { apiUrl } from '../../globals.js';
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const AbsiDetailPenjualan = ({ route }) => {
-  const [dataArtikel] = useState([
-    { id: '1', kodeArtikel: 'FG-HXKL-205MX-C', namaArtikel: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)', jumlah: '10' },
-    { id: '2', kodeArtikel: 'FG-HXKL-205MX-C', namaArtikel: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)', jumlah: '10' },
-    { id: '3', kodeArtikel: 'FG-HXKL-205MX-C', namaArtikel: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)', jumlah: '10' },
-    { id: '4', kodeArtikel: 'FG-HXKL-205MX-C', namaArtikel: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)', jumlah: '10' },
-    { id: '5', kodeArtikel: 'FG-HXKL-205MX-C', namaArtikel: 'Hicoop Boxer Karet Luar Mix Max Seri 2-1 (L)', jumlah: '10' },
-  ]);
-  const [setSelectedCount] = useState(0);
-  const [totalItems, setTotalItems] = useState(0);
-  const [selectedItems, setSelectedItems] = useState([]);
-  const [filteredItems, setFilteredItems] = useState([]);
-  const { pj, tanggal } = route.params;
-  const handleItemPress = (barang) => {
-    const itemIndex = selectedItems.findIndex((item) => item.id === barang.id);
-    if (itemIndex !== -1) {
-      const newSelectedItems = [...selectedItems];
-      newSelectedItems.splice(itemIndex, 1);
-      setSelectedItems(newSelectedItems);
-      setSelectedCount(selectedItems.length - 1);
-    } else {
-      setSelectedItems([...selectedItems, barang]);
-      setSelectedCount(selectedItems.length + 1);
-    }
+const AbsiDetailPenjualan = () => {
+  const [penjualanData, setPenjualanData] = useState(null);
+  const [detailPenjualanData, setDetailPenjualanData] = useState([]);
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
   };
+
+  const fetchData = async () => {
+    try {
+      const selectedIdPenjualan = await AsyncStorage.getItem('selected_id_penjualan');
+      if (selectedIdPenjualan) {
+        const formData = new FormData();
+        formData.append('id_jual', selectedIdPenjualan);
+        const response = await fetch(`${apiUrl}/getJualDetail`, { method: 'POST', body: formData });
+        const data = await response.json();
+        if (data.success) {
+          setPenjualanData(data.jual);
+          setDetailPenjualanData(data.detail);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };  
+
   useEffect(() => {
-    setFilteredItems(dataArtikel);
-  }, [dataArtikel]);
-  useEffect(() => {
-    let total = 0;
-    filteredItems.forEach((barang) => {
-      total += parseInt(barang.jumlah);
-    });
-    setTotalItems(total);
-  }, [filteredItems]);
+    fetchData();
+  }, []);
 
   return (
     <View style={styles.container}>
       <View style={styles.form}>
         <View style={styles.header}>
-          <View style={styles.headerRow}>
-            <Text style={styles.headerLeft1}>{pj}</Text>
-            <Text style={styles.headerRight}>{tanggal}</Text>
+          <View style={styles.headerCard}>
+            <Text style={styles.headerCardText1}>{penjualanData && penjualanData.id}</Text>
+            <Text style={styles.headerCardText2}>{penjualanData && formatDate(penjualanData.created_at)}</Text>
           </View>
         </View>
-        <View style={styles.label}>
-          <Text style={styles.labelText1}>No.</Text>
-          <Text style={styles.labelText2}>List Artikel</Text>
-          <Text style={styles.labelText3}>Jumlah</Text>
-        </View>
-        <ScrollView style={styles.scroll}>
-          {filteredItems.map((barang, index) => (
-            <View key={index} onPress={() => handleItemPress(barang)} style={[styles.card, barang.jumlah === '20' ? styles.cardBackground : null]}>
-              <View style={styles.cardRow}>
-                <Text style={styles.cardText1}>{`${barang.id}.`}</Text>
-                <View style={styles.cardColumn}>
-                  <Text style={styles.cardText2}>{`${barang.kodeArtikel}`}</Text>
-                  <Text style={styles.cardText3}>{`${barang.namaArtikel}`}</Text>
-                </View>
-                <Text style={styles.cardText5}>{`${barang.jumlah}`}</Text>
-              </View>
+        <FlatList
+          data={detailPenjualanData}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => (
+            <View style={styles.card}>
+              <Text style={styles.cardText1}>{`${item.kode} / ${item.nama_produk}`}</Text>
+              <Text style={styles.cardText2}>{`Jumlah: ${item.qty}`}</Text>
             </View>
-          ))}
-        </ScrollView>
-        <View style={styles.labela}>
-          <Text style={styles.labelText}>Total Barang:</Text>
-          <Text style={styles.labelText}>{totalItems}</Text>
-        </View>
+          )}
+        />
       </View>
     </View>
   );
@@ -87,101 +74,42 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
   header: {
-    padding: 15,
+    padding: 10,
     marginTop: -10,
     borderRadius: 10,
     marginBottom: 10,
-    textAlign: 'center',
     backgroundColor: '#071952',
   },
-  headerRow: {
+  headerCard: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: 'white',
     justifyContent: 'space-between',
   },
-  headerLeft1: {
+  headerCardText1: {
     fontSize: 16,
+    marginTop: -5,
     color: 'white',
-    textAlign: 'left',
     fontWeight: 'bold',
   },
-  headerRight: {
+  headerCardText2: {
     fontSize: 16,
+    marginTop: -5,
     color: 'white',
-    textAlign: 'right',
-  },
-  label: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: 'black',
-    justifyContent: 'space-between',
-  },
-  labelText1: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  labelText2: {
-    fontSize: 16,
-    marginLeft: -185,
-    fontWeight: 'bold',
-  },
-  labelText3: {
-    fontSize: 16,
-    marginRight: 15,
-    fontWeight: 'bold',
-  },
-  scroll: {
-    marginBottom: 10,
   },
   card: {
-    width: '95%',
-    marginBottom: 5,
-    borderBottomWidth: 1,
-    borderBottomColor: '#071952',
-  },
-  cardBackground: {
-    backgroundColor: 'red',
-  },
-  cardRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-  },
-  cardColumn: {
-    flex: 1,
+    padding: 10,
+    borderWidth: 2,
+    borderRadius: 10,
+    marginBottom: 10,
+    borderColor: '#071952',
   },
   cardText1: {
     fontSize: 16,
-    marginLeft: 5,
+    marginTop: -5,
     fontWeight: 'bold',
   },
   cardText2: {
     fontSize: 16,
-    marginLeft: 15,
-    fontWeight: 'bold',
-  },
-  cardText3: {
-    fontSize: 16,
-    marginLeft: 15,
-  },
-  cardText5: {
-    fontSize: 16,
-    marginRight: 10,
-    fontWeight: 'bold',
-  },
-  labela: {
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
-    flexDirection: 'row',
-    backgroundColor: '#071952',
-    justifyContent: 'space-between',
-  },
-  labelText: {
-    fontSize: 16,
-    color: 'white',
-    fontWeight: 'bold',
+    marginBottom: -5,
   },
 });
 export default AbsiDetailPenjualan;
