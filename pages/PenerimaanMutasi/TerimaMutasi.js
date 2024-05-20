@@ -1,98 +1,108 @@
+import { apiUrl } from '../../globals.js';
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { View, Text, TextInput, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 
-const AbsiTerimaMutasi = ({ navigation }) => {
-  const [searchText] = useState('');
-  const allData = [...dataProses, ...dataSelesai];
-  const [dataToShow, setDataToShow] = useState([]);
-  const [activeButton, setActiveButton] = useState(null);
-  const filteredData = dataToShow.filter(
-    (data) =>
-      data.mu.toLowerCase().includes(searchText.toLowerCase()) ||
-      data.toko.toLowerCase().includes(searchText.toLowerCase()) ||
-      data.tanggal.toLowerCase().includes(searchText.toLowerCase())
-  );
-  const handleCardClick = (data) => {
-    let detailScreen = 'DetailTerimaMutasi';
-    
-    if (activeButton === 'Selesai') {
-      detailScreen = 'DetailPenerimaanMutasi';
-    }
+const status = {
+  0: 'Menunggu di approve',
+  1: 'Proses kirim',
+  2: 'Selesai',
+  3: 'Selisih',
+};
 
-    navigation.navigate(detailScreen, { 
-      itemId: data.mu,
-      toko: data.toko,
-      tanggal: data.tanggal,
-    });
-  };
+const AbsiTerimaMutasi = ({ route, navigation }) => {
+  const [idToko, setIdToko] = useState(null);
+  const [dataMutasi, setDataMutasi] = useState([]);
+  const [searchText, setSearchText] = useState('');
+  const [activeButton, setActiveButton] = useState('Proses');
 
-  const handleButtonClick = (buttonName) => {
-    setActiveButton(buttonName);
-    if (buttonName === 'Proses') {
-      setDataToShow(dataProses);
-    } else if (buttonName === 'Tolak') {
-      setDataToShow(dataTolak);
-    } else if (buttonName === 'Selesai') {
-      setDataToShow(dataSelesai);
-    } else if (buttonName === 'All') {
-      setDataToShow(allData);
+  const handleButtonClick = (buttonName) => setActiveButton(buttonName);
+
+  const handleCardClick = async (data) => {
+    try {
+      await AsyncStorage.setItem('selected_id_mutasi', data.id);
+      navigation.navigate('DetailPenerimaanMutasi', { mu: data.mu });
+    } catch (error) {
+      console.error('Error fetching data:', error);
     }
   };
-  const dataProses = [
-    { mu: 'MU-202301001', toko: 'Benteng Mart', tanggal: '01/01/2024' },
-    { mu: 'MU-202301002', toko: 'Benteng Mart', tanggal: '01/01/2024' },
-    { mu: 'MU-202301003', toko: 'Benteng Mart', tanggal: '01/01/2024' },
-    { mu: 'MU-202301004', toko: 'Benteng Mart', tanggal: '01/01/2024' },
-    { mu: 'MU-202301005', toko: 'Benteng Mart', tanggal: '01/01/2024' },
-  ];
-  const dataSelesai = [
-    { mu: 'MU-202301006', toko: 'Benteng Mart', tanggal: '01/01/2024' },
-    { mu: 'MU-202301007', toko: 'Benteng Mart', tanggal: '01/01/2024' },
-    { mu: 'MU-202301008', toko: 'Benteng Mart', tanggal: '01/01/2024' },
-    { mu: 'MU-202301009', toko: 'Benteng Mart', tanggal: '01/01/2024' },
-  ];
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  const fetchData = async (id_toko) => {
+    try {
+      const formData = new FormData();
+      formData.append('id_toko', id_toko);
+      const response = await fetch(`${apiUrl}/getMutasi`, { method: 'POST', body: formData });
+      const responseData = await response.json();
+      if (responseData.success) {
+        setDataMutasi(responseData.mutasi);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+
   useEffect(() => {
-    handleButtonClick('Proses');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  
+    const fetchDataBasedOnParams = async () => {
+      try {
+        if (route.params && route.params.selectedStore) {
+          const { selectedStore } = route.params;
+          setIdToko(selectedStore.id_toko);
+          await fetchData(selectedStore.id_toko);
+        } else {
+          const storedIdToko = await AsyncStorage.getItem('id_toko');
+          if (storedIdToko) {
+            setIdToko(storedIdToko);
+            await fetchData(storedIdToko);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+    fetchDataBasedOnParams();
+  }, [route.params]);
+
   return (
     <View style={styles.container}>
       <View style={styles.form}>
-        <View style={styles.buttonRow}>
-          <TouchableOpacity
-            style={[styles.buttonOff, activeButton === 'Proses' && styles.buttonOn ]}
-            onPress={() => handleButtonClick('Proses')}
-          >
-            <Text style={[styles.buttonOfftext, activeButton === 'Proses' && styles.buttonOntext]}>DI PROSES</Text>
+        <TextInput value={searchText} style={styles.search} autoCapitalize="none" selectionColor="black" placeholder="Cari ID Penerimaan Mutasi ..." onChangeText={(text) => setSearchText(text)}/>
+        <View style={styles.button}>
+          <TouchableOpacity onPress={() => handleButtonClick('Proses')} style={[styles.buttonOff, activeButton === 'Proses' && styles.buttonOn]}>
+            <Text style={[styles.buttonOffText, activeButton === 'Proses' && styles.buttonOnText]}>PROSES</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.buttonOff, activeButton === 'Selesai' && styles.buttonOn]}
-            onPress={() => handleButtonClick('Selesai')}
-          >
-            <Text style={[styles.buttonOfftext, activeButton === 'Selesai' && styles.buttonOntext]}>SELESAI</Text>
+          <TouchableOpacity onPress={() => handleButtonClick('Selesai')} style={[styles.buttonOff, activeButton === 'Selesai' && styles.buttonOn]}>
+            <Text style={[styles.buttonOffText, activeButton === 'Selesai' && styles.buttonOnText]}>SELESAI</Text>
           </TouchableOpacity>
         </View>
-        <ScrollView style={styles.scroll}>
-          {filteredData.map((data, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.card}
-              onPress={() => handleCardClick(data)}
-            >
-              <View style={styles.cardRow}>
-                <View style={styles.cardColumn}>
-                  <Text style={styles.cardText1}>{`${data.mu}`}</Text>
-                  <Text style={styles.cardText2}>{`dari: ${data.toko}`}</Text>
-                  <Text style={styles.cardText3}>{`Tanggal: ${data.tanggal}`}</Text>
-                </View>
-                <Text style={styles.cardButton}>
-                  {activeButton === 'Proses' ? 'TERIMA' : activeButton === 'Selesai' ? 'DETAIL' : ''}
-                </Text>
+        <FlatList
+          keyExtractor={(item) => item.id}
+          data={dataMutasi.filter((data) => data.id.includes(searchText) && (activeButton === 'Proses' ? ['0', '1'].includes(data.status) : ['2', '3'].includes(data.status)))}
+          renderItem={({ item }) => (
+            <TouchableOpacity style={styles.card} onPress={() => handleCardClick(item)}>
+              <View style={styles.cardButton}>
+                <Text style={styles.cardText1}>{`${item.id}`}</Text>
+                <Text style={styles.cardText2}>{`${formatDate(item.created_at)}`}</Text>
+              </View>
+              <View style={styles.cardButton}>
+                <Text style={styles.cardText3}>{`Asal: ${item.asal}`}</Text>
+              </View>
+              <View style={styles.cardButton}>
+                <Text style={styles.cardText3}>{`Tujuan: ${item.tujuan}`}</Text>
+              </View>
+              <View style={styles.cardButton}>
+                <Text style={styles.cardText4}>{`Status: ${status[item.status]}`}</Text>
               </View>
             </TouchableOpacity>
-          ))}
-        </ScrollView>
+          )}
+        />
       </View>
     </View>
   );
@@ -106,12 +116,20 @@ const styles = StyleSheet.create({
   form: {
     flex: 1,
     padding: 20,
-    marginTop: -10,
     borderRadius: 25,
     marginBottom: -20,
     backgroundColor: 'white',
   },
-  buttonRow: {
+  search: {
+    padding: 10,
+    marginTop: -10,
+    borderWidth: 2,
+    borderRadius: 10,
+    marginBottom: 10,
+    borderColor: 'grey',
+    backgroundColor: '#F7F7F7',
+  },
+  button: {
     marginBottom: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -120,27 +138,24 @@ const styles = StyleSheet.create({
     padding: 10,
     width: '49%',
     borderWidth: 2,
-    borderRadius: 25,
+    borderRadius: 10,
+    borderColor: 'grey',
     alignItems: 'center',
-    borderColor: '#071952',
     backgroundColor: '#F7F7F7',
   },
   buttonOn: {
     borderColor: 'white',
     backgroundColor: '#071952',
   },
-  buttonOfftext: {
+  buttonOffText: {
     fontSize: 16,
     color: 'black',
     fontWeight: 'bold',
   },
-  buttonOntext: {
+  buttonOnText: {
     fontSize: 16,
     color: 'white',
     fontWeight: 'bold',
-  },
-  scroll: {
-    marginBottom: 10,
   },
   card: {
     padding: 10,
@@ -148,14 +163,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 10,
     borderColor: '#071952',
-    backgroundColor: '#fff',
+    backgroundColor: '#F7F7F7',
   },
-  cardRow: {
+  cardButton: {
     flexDirection: 'row',
-  },
-  cardColumn: {
-    flex: 1,
-    marginRight: 5,
+    justifyContent: 'space-between',
   },
   cardText1: {
     fontSize: 16,
@@ -164,21 +176,14 @@ const styles = StyleSheet.create({
   },
   cardText2: {
     fontSize: 16,
+    marginTop: -5,
   },
   cardText3: {
     fontSize: 16,
-    marginBottom: -5,
   },
-  cardButton: {
-    padding: 10,
+  cardText4: {
     fontSize: 16,
-    color: 'black',
-    borderWidth: 2,
-    borderRadius: 10,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    alignSelf: 'center',
-    backgroundColor: '#F7F7F7',
+    marginBottom: -5,
   },
 });
 export default AbsiTerimaMutasi;
